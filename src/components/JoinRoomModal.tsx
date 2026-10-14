@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Shield, Key, Hash, User, Sparkles, ArrowRight, Lock } from 'lucide-react';
+import { Shield, Key, Hash, User, Sparkles, ArrowRight, Lock, Network } from 'lucide-react';
 import { RoomSession } from '../types/chat';
 
 interface JoinRoomModalProps {
@@ -32,6 +32,10 @@ export const JoinRoomModal: React.FC<JoinRoomModalProps> = ({ onJoin, defaultSes
     defaultSession?.userName || `特工-${Math.floor(100 + Math.random() * 900)}`
   );
   const [showKey, setShowKey] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [customWsUrl, setCustomWsUrl] = useState(() => {
+    return localStorage.getItem('encchat_custom_ws_url') || '';
+  });
   const [error, setError] = useState('');
 
   const handleGenerate = () => {
@@ -57,6 +61,13 @@ export const JoinRoomModal: React.FC<JoinRoomModalProps> = ({ onJoin, defaultSes
     if (!cleanName) {
       setError('请输入您的房间昵称');
       return;
+    }
+
+    const cleanWs = customWsUrl.trim();
+    if (cleanWs) {
+      localStorage.setItem('encchat_custom_ws_url', cleanWs);
+    } else {
+      localStorage.removeItem('encchat_custom_ws_url');
     }
 
     const userId = defaultSession?.userId || `user_${Math.random().toString(36).substring(2, 9)}`;
@@ -173,6 +184,36 @@ export const JoinRoomModal: React.FC<JoinRoomModalProps> = ({ onJoin, defaultSes
                 <Lock className="w-4 h-4" />
               </div>
             </div>
+          </div>
+
+          {/* Advanced Relay Settings (Collapsible) */}
+          <div className="pt-1">
+            <button
+              type="button"
+              onClick={() => setShowAdvanced(!showAdvanced)}
+              className="text-[11px] text-slate-500 hover:text-slate-300 flex items-center gap-1 font-mono transition-colors"
+            >
+              <Network className="w-3.5 h-3.5 text-blue-400" />
+              <span>{showAdvanced ? '收起高级网络设置' : '高级网络设置 (可选自定义中继地址)'}</span>
+            </button>
+
+            {showAdvanced && (
+              <div className="mt-2 p-3 rounded-xl bg-[#090b12] border border-[#23293e] space-y-1.5 animate-fade-in">
+                <label className="block text-[11px] text-slate-400">
+                  WebSocket 中继服务器地址
+                </label>
+                <input
+                  type="text"
+                  value={customWsUrl}
+                  onChange={(e) => setCustomWsUrl(e.target.value)}
+                  placeholder="留空默认连接同源 /ws 或 Worker"
+                  className="w-full px-3 py-1.5 rounded-lg bg-[#111420] border border-[#23293e] focus:border-blue-500 focus:outline-none text-xs text-slate-200 font-mono placeholder:text-slate-600"
+                />
+                <p className="text-[10px] text-slate-500 leading-normal">
+                  例如: <code className="text-slate-400">wss://encchat-relay.xxx.workers.dev/ws</code>。若部署在 Cloudflare Pages 且已配置路由，留空即可。
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Persistent Room Hint */}

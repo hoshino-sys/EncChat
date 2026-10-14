@@ -45,8 +45,15 @@ export class ChatNetworkService {
     }
 
     // Determine WebSocket endpoint
+    const savedCustomUrl = typeof window !== 'undefined' ? localStorage.getItem('encchat_custom_ws_url') : null;
+    const envWsUrl = import.meta.env.VITE_WS_URL;
+
     if (customWsUrl) {
       this.wsUrl = customWsUrl;
+    } else if (savedCustomUrl && savedCustomUrl.trim()) {
+      this.wsUrl = savedCustomUrl.trim();
+    } else if (envWsUrl && envWsUrl.trim()) {
+      this.wsUrl = envWsUrl.trim();
     } else {
       const isHttps = window.location.protocol === 'https:';
       const wsProto = isHttps ? 'wss:' : 'ws:';
