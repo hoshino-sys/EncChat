@@ -2,6 +2,7 @@ import { ChatMessage, PeerUser, ConnectionState } from '../types/chat';
 
 export interface WebSocketCallbacks {
   onMessage: (message: ChatMessage) => void;
+  onHistory: (messages: ChatMessage[]) => void;
   onPeersUpdate: (peers: PeerUser[]) => void;
   onStatusChange: (status: ConnectionState) => void;
   onSystemNotice: (text: string) => void;
@@ -159,6 +160,16 @@ export class ChatNetworkService {
               isSelf: data.message.senderId === this.userId,
             });
           }
+        }
+        break;
+
+      case 'history':
+        if (Array.isArray(data.messages)) {
+          const list = data.messages.map((m: any) => ({
+            ...m,
+            isSelf: m.senderId === this.userId,
+          }));
+          this.callbacks.onHistory(list);
         }
         break;
 

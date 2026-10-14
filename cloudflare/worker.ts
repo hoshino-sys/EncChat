@@ -277,15 +277,53 @@ export class ChatRoom {
               userId: data.userId,
               userName: requestedName
             }, ws);
+
+            // Send message history from SQLite storage to this client
+            try {
+              const historyMap = await this.state.storage.list<any>({ prefix: 'msg_', limit: 500 });
+              const messages = Array.from(historyMap.values()).sort((a, b) => a.timestamp - b.timestamp);
+              ws.send(JSON.stringify({
+                type: 'history',
+                messages
+              }));
+            } catch (err) {
+              console.error('Failed to retrieve history:', err);
+            }
             break;
           }
 
           case 'message': {
-            // Forward ciphertext payload to everyone else in the room
-            this.broadcast({
-              type: 'message',
-              message: data.message
-            }, ws);
+            const msg = data.message;
+            if (msg && msg.id) {
+              // Persist message in SQLite storage
+              try {
+                await this.state.storage.put(`msg_${msg.timestamp}_${msg.id}`, msg);
+              } catch (err) {
+                console.error('Failed to save message to SQLite storage:', err);
+              }
+
+              // Broadcast message to everyone else in the room
+              this.broadcast({
+                type: 'message',
+                message: msg
+              }, ws);
+            }
+            break;
+          }
+
+          case 'clear_history': {
+            const session = this.sessions.get(ws);
+            if (session && session.role === 'admin') {
+              try {
+                const keys = await this.state.storage.list({ prefix: 'msg_' });
+                for (const key of keys.keys()) {
+                  await this.state.storage.delete(key);
+                }
+                this.broadcast({ type: 'history_cleared' });
+              } catch (err) {
+                console.error('Failed to clear history:', err);
+              }
+            }
             break;
           }
 

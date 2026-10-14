@@ -70,6 +70,30 @@ export const App: React.FC = () => {
     });
   }, []);
 
+  const handleIncomingHistory = useCallback(async (historyList: ChatMessage[]) => {
+    const key = cryptoKeyRef.current;
+    const decryptedList = await Promise.all(
+      historyList.map(async (msg) => {
+        if (msg.decryptedText) return msg;
+        if (key && msg.encrypted) {
+          try {
+            const plaintext = await decryptMessage(msg.encrypted, key);
+            return { ...msg, decryptedText: plaintext };
+          } catch {
+            return { ...msg, decryptionError: true };
+          }
+        }
+        return msg;
+      })
+    );
+
+    setMessages((prev) => {
+      const existingIds = new Set(prev.map((m) => m.id));
+      const newItems = decryptedList.filter((m) => !existingIds.has(m.id));
+      return [...prev, ...newItems].sort((a, b) => a.timestamp - b.timestamp);
+    });
+  }, []);
+
   const handlePeersUpdate = useCallback((newPeers: PeerUser[]) => {
     setPeers(newPeers);
   }, []);
@@ -106,6 +130,7 @@ export const App: React.FC = () => {
 
         const network = new ChatNetworkService({
           onMessage: handleIncomingMessage,
+          onHistory: handleIncomingHistory,
           onPeersUpdate: handlePeersUpdate,
           onStatusChange: handleStatusChange,
           onSystemNotice: handleSystemNotice,
@@ -127,7 +152,7 @@ export const App: React.FC = () => {
         networkRef.current = null;
       }
     };
-  }, [session, handleIncomingMessage, handlePeersUpdate, handleStatusChange, handleSystemNotice]);
+  }, [session, handleIncomingMessage, handleIncomingHistory, handlePeersUpdate, handleStatusChange, handleSystemNotice]);
 
   const handleLogin = (newSession: RoomSession) => {
     try {

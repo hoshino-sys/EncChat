@@ -203,16 +203,26 @@ wss.on('connection', (ws, req) => {
             userId: clientInfo.userId,
             userName: clientInfo.userName
           }, ws);
+
+          // Send history
+          ws.send(JSON.stringify({
+            type: 'history',
+            messages: messageStorage
+          }));
           break;
         }
 
         case 'message': {
           if (!clientInfo || !clientInfo.roomId) return;
-          // Forward encrypted message to other clients in the room
-          broadcastToRoom(clientInfo.roomId, {
-            type: 'message',
-            message: data.message
-          }, ws);
+          const msg = data.message;
+          if (msg && msg.id) {
+            messageStorage.push(msg);
+            // Forward message to other clients in the room
+            broadcastToRoom(clientInfo.roomId, {
+              type: 'message',
+              message: msg
+            }, ws);
+          }
           break;
         }
 
