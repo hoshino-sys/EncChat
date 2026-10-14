@@ -76,7 +76,16 @@ export class ChatNetworkService {
     this.callbacks.onStatusChange('connecting');
 
     try {
-      this.ws = new WebSocket(this.wsUrl);
+      let finalUrl = this.wsUrl;
+      try {
+        const u = new URL(this.wsUrl);
+        u.searchParams.set('roomId', this.roomId);
+        finalUrl = u.toString();
+      } catch {
+        finalUrl = `${this.wsUrl}${this.wsUrl.includes('?') ? '&' : '?'}roomId=${encodeURIComponent(this.roomId)}`;
+      }
+
+      this.ws = new WebSocket(finalUrl);
 
       this.ws.onopen = () => {
         if (this.isExplicitlyClosed) {
@@ -239,6 +248,15 @@ export class ChatNetworkService {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify(data));
     }
+  }
+
+  public getWsUrl(): string {
+    return this.wsUrl;
+  }
+
+  public reconnect() {
+    this.isExplicitlyClosed = false;
+    this.initWebSocket();
   }
 
   public disconnect() {

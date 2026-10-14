@@ -7,6 +7,8 @@ interface ChatHeaderProps {
   userName: string;
   peerCount: number;
   connectionState: ConnectionState;
+  relayUrl?: string;
+  onReconnect?: () => void;
   onEditName: () => void;
   onLeaveRoom: () => void;
 }
@@ -16,6 +18,8 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
   userName,
   peerCount,
   connectionState,
+  relayUrl,
+  onReconnect,
   onEditName,
   onLeaveRoom,
 }) => {
@@ -70,7 +74,15 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
         </button>
 
         {/* Connection status dot & Peer count */}
-        <div className="flex items-center gap-1.5 text-xs text-slate-400" title={statusText}>
+        <div
+          onClick={connectionState !== 'connected' ? onReconnect : undefined}
+          className={`flex items-center gap-1.5 text-xs text-slate-400 ${
+            connectionState !== 'connected' ? 'cursor-pointer hover:text-slate-200' : ''
+          }`}
+          title={`${statusText}${relayUrl ? `\n中继服务: ${relayUrl}` : ''}${
+            connectionState !== 'connected' ? '\n(点击尝试手动重连)' : ''
+          }`}
+        >
           <span className={`w-2 h-2 rounded-full ${statusColor}`} />
           <span className="hidden md:inline text-[11px] font-mono">{statusText}</span>
           <span className="hidden md:inline text-slate-700">|</span>

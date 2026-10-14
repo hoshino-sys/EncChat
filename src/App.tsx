@@ -216,6 +216,8 @@ export const App: React.FC = () => {
             userName={session.userName}
             peerCount={peers.length > 0 ? peers.length : 1}
             connectionState={connectionState}
+            relayUrl={networkRef.current?.getWsUrl()}
+            onReconnect={() => networkRef.current?.reconnect()}
             onEditName={() => setIsEditingName(true)}
             onLeaveRoom={handleLeaveRoom}
           />
