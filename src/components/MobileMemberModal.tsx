@@ -114,7 +114,7 @@ export const MobileMemberModal: React.FC<MobileMemberModalProps> = ({
 
                 <div>
                   <div className="flex items-center gap-1.5">
-                    <span className="font-serif text-[15px] text-[#ffffff] font-medium">
+                    <span className={`font-serif text-[15px] font-medium ${member.isAdmin ? 'text-name-gold' : 'text-name-red'}`}>
                       {member.name}
                     </span>
                     {member.isSelf && (
@@ -133,8 +133,8 @@ export const MobileMemberModal: React.FC<MobileMemberModalProps> = ({
                 <span
                   className={`text-[10px] px-2 py-0.5 rounded-md font-serif ${
                     member.isAdmin
-                      ? 'seal-bg seal-red font-semibold'
-                      : 'bg-white/[0.06] text-[#b0b6c6] border border-white/10'
+                      ? 'seal-bg text-[#e5c158] border border-[#e5c158]/30 font-semibold'
+                      : 'bg-[#e05353]/10 text-[#e05353] border border-[#e05353]/30 font-semibold'
                   }`}
                 >
                   {member.role}

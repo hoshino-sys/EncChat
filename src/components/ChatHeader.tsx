@@ -110,11 +110,15 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
         </button>
 
         {/* User Identity Badge */}
-        <div className="flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-xl bg-white/[0.04] border border-white/10 text-xs font-serif text-[#ffffff]">
-          <span className="max-w-[70px] sm:max-w-none truncate">{userName}</span>
+        <div className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-xl bg-white/[0.04] border border-white/10 text-xs font-serif">
+          <span className={`max-w-[70px] sm:max-w-none truncate font-medium ${isAdmin ? 'text-name-gold' : 'text-name-red'}`}>
+            {userName}
+          </span>
           <span
-            className={`text-[9px] px-1.5 py-0.2 rounded ${
-              isAdmin ? 'seal-bg seal-red font-medium' : 'bg-white/[0.06] text-[#9ca1b0]'
+            className={`text-[9px] px-1.5 py-0.2 rounded font-serif ${
+              isAdmin
+                ? 'seal-bg text-[#e5c158] border border-[#e5c158]/30 font-medium'
+                : 'bg-[#e05353]/10 text-[#e05353] border border-[#e05353]/30 font-medium'
             }`}
           >
             {isAdmin ? '管理员' : '用户'}

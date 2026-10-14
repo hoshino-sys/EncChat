@@ -15,10 +15,9 @@ export const StealthBubble: React.FC<StealthBubbleProps> = ({
   isAfkLocked = false,
 }) => {
   const [isHovered, setIsHovered] = useState(false);
-  const [isTouched, setIsTouched] = useState(false);
-  const [touchPos, setTouchPos] = useState<{ x: number; y: number } | null>(null);
+  const [isTapActive, setIsTapActive] = useState(false);
   const [isRightClickDown, setIsRightClickDown] = useState(false);
-  const bubbleRef = useRef<HTMLDivElement>(null);
+  const tapTimerRef = useRef<number | null>(null);
 
   // Global mouseup to release right-click hold reliably
   useEffect(() => {
@@ -28,15 +27,21 @@ export const StealthBubble: React.FC<StealthBubbleProps> = ({
       }
     };
     window.addEventListener('mouseup', handleGlobalMouseUp);
-    return () => window.removeEventListener('mouseup', handleGlobalMouseUp);
+    return () => {
+      window.removeEventListener('mouseup', handleGlobalMouseUp);
+      if (tapTimerRef.current) {
+        clearTimeout(tapTimerRef.current);
+      }
+    };
   }, []);
 
   // Reveal condition:
-  // PC: Right-click hold OR (Hover + Alt)
-  // Mobile: Touch and hold
+  // 1. Mobile & Click: Tap reveals for 3 seconds
+  // 2. PC: Right-click hold
+  // 3. PC: Alt + Hover
   const isRevealed =
     !isAfkLocked &&
-    (isRightClickDown || (isHovered && isAltPressed) || isTouched);
+    (isTapActive || isRightClickDown || (isHovered && isAltPressed));
 
   // Format time (HH:mm) with lining numbers
   const timeString = useMemo(() => {
@@ -61,33 +66,30 @@ export const StealthBubble: React.FC<StealthBubbleProps> = ({
     isRevealed,
   });
 
-  const handleTouchStart = (e: React.TouchEvent) => {
-    if (isAfkLocked) return;
-    const t = e.touches[0];
-    if (t) {
-      setTouchPos({ x: t.clientX, y: t.clientY });
-    } else if (bubbleRef.current) {
-      const rect = bubbleRef.current.getBoundingClientRect();
-      setTouchPos({ x: rect.left + rect.width / 2, y: rect.top });
-    }
-    setIsTouched(true);
+  // Handle single tap to show for 3 seconds (No floating window)
+  const handleBubbleClick = (e: React.MouseEvent) => {
+    // Ignore right click for tap logic
+    if (e.button === 2 || isAfkLocked) return;
+
     if ('vibrate' in navigator) {
       try {
         navigator.vibrate(15);
       } catch {}
     }
-  };
 
-  const handleTouchMove = (e: React.TouchEvent) => {
-    const t = e.touches[0];
-    if (t) {
-      setTouchPos({ x: t.clientX, y: t.clientY });
+    if (isTapActive) {
+      // Toggle off if tapped again
+      if (tapTimerRef.current) clearTimeout(tapTimerRef.current);
+      setIsTapActive(false);
+    } else {
+      // Reveal for 3 seconds
+      setIsTapActive(true);
+      if (tapTimerRef.current) clearTimeout(tapTimerRef.current);
+      tapTimerRef.current = window.setTimeout(() => {
+        setIsTapActive(false);
+        tapTimerRef.current = null;
+      }, 3000);
     }
-  };
-
-  const handleTouchEnd = () => {
-    setIsTouched(false);
-    setTouchPos(null);
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -106,7 +108,7 @@ export const StealthBubble: React.FC<StealthBubbleProps> = ({
   };
 
   const isSelf = message.isSelf;
-  const isAdmin = message.senderName === '夜星';
+  const isYeXing = message.senderName === '夜星';
 
   return (
     <div
@@ -117,17 +119,22 @@ export const StealthBubble: React.FC<StealthBubbleProps> = ({
       {/* Sender info & time */}
       <div className="flex items-center gap-2 px-1.5 mb-1.5 text-[11px] font-serif tracking-wider">
         <div className="flex items-center gap-1.5">
-          <span className={isSelf ? 'text-[#ffffff] font-medium' : 'text-[#cfd3dc]'}>
+          {/* 夜星 = 金色文字; 小夜星 = 红色文字 */}
+          <span
+            className={`font-medium tracking-wide ${
+              isYeXing ? 'text-name-gold' : 'text-name-red'
+            }`}
+          >
             {message.senderName}
           </span>
           <span
             className={`text-[9px] px-1.5 py-0.2 rounded font-serif ${
-              isAdmin
-                ? 'seal-bg seal-red font-medium'
-                : 'bg-white/[0.06] text-[#9ba0ad] border border-white/10'
+              isYeXing
+                ? 'seal-bg text-[#e5c158] border border-[#e5c158]/30 font-medium'
+                : 'bg-[#e05353]/10 text-[#e05353] border border-[#e05353]/30 font-medium'
             }`}
           >
-            {isAdmin ? '管理员' : '用户'}
+            {isYeXing ? '管理员' : '用户'}
           </span>
         </div>
         <span className="opacity-45 text-[10px] font-mono lining-nums tabular-nums text-[#a4a9b6]">
@@ -137,19 +144,15 @@ export const StealthBubble: React.FC<StealthBubbleProps> = ({
 
       {/* White Frosted Glass Bubble (白透毛玻璃) */}
       <div
-        ref={bubbleRef}
+        onClick={handleBubbleClick}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         onMouseDown={handleMouseDown}
         onMouseUp={handleMouseUp}
         onContextMenu={(e) => e.preventDefault()}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-        onTouchCancel={handleTouchEnd}
-        className={`relative max-w-[85%] md:max-w-[72%] rounded-2xl px-4 py-3 transition-all duration-200 cursor-pointer ${
+        className={`relative max-w-[85%] md:max-w-[72%] rounded-2xl px-4 py-3 transition-all duration-200 cursor-pointer overflow-hidden ${
           isRevealed
-            ? 'white-glass-bubble-revealed'
+            ? 'white-glass-bubble-revealed shadow-[0_8px_32px_rgba(255,255,255,0.08)] scale-[1.01] animate-decipher-glow'
             : isSelf
             ? 'white-glass-bubble hover:border-white/30 hover:bg-white/[0.11]'
             : 'white-glass-bubble hover:border-white/30 hover:bg-white/[0.11]'
@@ -178,24 +181,14 @@ export const StealthBubble: React.FC<StealthBubbleProps> = ({
             </span>
           </div>
         )}
-      </div>
 
-      {/* 方案 A: 手机端浮空镜像预览气泡 (Floating Callout above Finger) */}
-      {isTouched && !isAfkLocked && touchPos && (
-        <div
-          className="fixed z-50 pointer-events-none transform -translate-x-1/2 transition-all duration-150 animate-fade-in flex flex-col items-center"
-          style={{
-            left: `${Math.min(Math.max(touchPos.x, 130), window.innerWidth - 130)}px`,
-            top: `${Math.max(touchPos.y - 72, 35)}px`,
-          }}
-        >
-          <div className="white-glass-bubble-revealed px-4 py-2.5 rounded-2xl border border-white/40 shadow-[0_16px_50px_rgba(0,0,0,0.9)] max-w-[85vw] whitespace-pre-wrap break-words text-[15px] font-serif text-[#ffffff] leading-relaxed text-center">
-            {scrambleText}
+        {/* 3-Second Countdown Progress Hairline (流光倒计时细线) */}
+        {isTapActive && !isAfkLocked && (
+          <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-white/10 pointer-events-none">
+            <div className="h-full bg-gradient-to-r from-transparent via-white/80 to-transparent animate-countdown-3s" />
           </div>
-          {/* Subtle downward pointer */}
-          <div className="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] border-t-white/40 mt-0.5" />
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };

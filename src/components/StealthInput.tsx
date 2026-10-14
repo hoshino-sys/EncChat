@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { ArrowUp, Eye, EyeOff } from 'lucide-react';
+import { generateMaskedRunes, getCharCount } from '../utils/maskCipher';
 
 interface StealthInputProps {
   onSendMessage: (text: string) => void;
@@ -8,7 +9,7 @@ interface StealthInputProps {
 
 export const StealthInput: React.FC<StealthInputProps> = ({ onSendMessage, disabled }) => {
   const [text, setText] = useState('');
-  const [maskedIndex, setMaskedIndex] = useState(0);
+  const [isMasked, setIsMasked] = useState(false);
   const [isPeeking, setIsPeeking] = useState(false);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -23,38 +24,38 @@ export const StealthInput: React.FC<StealthInputProps> = ({ onSendMessage, disab
     }
   };
 
-  const scheduleMasking = useCallback((currentLength: number) => {
+  // Schedule auto-masking after 1s of typing inactivity
+  const scheduleMasking = useCallback(() => {
     if (maskTimerRef.current) {
       clearTimeout(maskTimerRef.current);
     }
 
     maskTimerRef.current = window.setTimeout(() => {
-      setMaskedIndex(currentLength);
+      setIsMasked(true);
     }, 1000);
   }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const val = e.target.value;
-    const prevLength = text.length;
     setText(val);
 
     if (val.length === 0) {
-      setMaskedIndex(0);
+      setIsMasked(false);
       if (maskTimerRef.current) clearTimeout(maskTimerRef.current);
       return;
     }
 
-    if (val.length < prevLength) {
-      setMaskedIndex((prev) => Math.min(prev, val.length));
-    }
+    // Unmask immediately while active typing
+    setIsMasked(false);
 
     if (!isComposingRef.current) {
-      scheduleMasking(val.length);
+      scheduleMasking();
     }
   };
 
   const handleCompositionStart = () => {
     isComposingRef.current = true;
+    setIsMasked(false);
     if (maskTimerRef.current) clearTimeout(maskTimerRef.current);
   };
 
@@ -62,7 +63,7 @@ export const StealthInput: React.FC<StealthInputProps> = ({ onSendMessage, disab
     isComposingRef.current = false;
     const val = (e.target as HTMLTextAreaElement).value;
     setText(val);
-    scheduleMasking(val.length);
+    scheduleMasking();
   };
 
   const handleSend = () => {
@@ -71,7 +72,7 @@ export const StealthInput: React.FC<StealthInputProps> = ({ onSendMessage, disab
 
     onSendMessage(trimmed);
     setText('');
-    setMaskedIndex(0);
+    setIsMasked(false);
     if (maskTimerRef.current) {
       clearTimeout(maskTimerRef.current);
     }
@@ -82,6 +83,10 @@ export const StealthInput: React.FC<StealthInputProps> = ({ onSendMessage, disab
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Reset timer on any key press
+    setIsMasked(false);
+    scheduleMasking();
+
     if (isComposingRef.current || e.nativeEvent.isComposing) {
       return;
     }
@@ -92,7 +97,7 @@ export const StealthInput: React.FC<StealthInputProps> = ({ onSendMessage, disab
     }
   };
 
-  // Auto-resize
+  // Auto-resize textarea height
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
@@ -114,18 +119,22 @@ export const StealthInput: React.FC<StealthInputProps> = ({ onSendMessage, disab
   // Compute visual displayed text
   const displayedContent = (() => {
     if (!text) return null;
-    if (isPeeking) return text;
+    if (isPeeking) {
+      return <span className="text-[#ffffff] font-serif">{text}</span>;
+    }
 
-    const validMaskCount = Math.min(maskedIndex, text.length);
-    const maskedPart = '*'.repeat(validMaskCount);
-    const visiblePart = text.slice(validMaskCount);
+    if (isMasked) {
+      // 1s elapsed: Hide text completely behind mysterious 1:1 runes
+      const runes = generateMaskedRunes(getCharCount(text), 'input_draft');
+      return (
+        <span className="text-[#a3abb8] font-serif text-[15px] tracking-[0.25em] select-none transition-all duration-300">
+          {runes}
+        </span>
+      );
+    }
 
-    return (
-      <>
-        <span className="text-[#686f80] font-mono tracking-widest">{maskedPart}</span>
-        <span className="text-[#ece8df] font-serif">{visiblePart}</span>
-      </>
-    );
+    // Active typing (< 1s): Display visible plaintext
+    return <span className="text-[#ffffff] font-serif transition-all duration-200">{text}</span>;
   })();
 
   return (
@@ -134,7 +143,7 @@ export const StealthInput: React.FC<StealthInputProps> = ({ onSendMessage, disab
       <div className="relative flex items-end gap-2 p-1.5 rounded-2xl white-glass-input transition-all duration-200 focus-within:border-white/50 focus-within:bg-white/[0.12]">
         {/* Dual Layer Container */}
         <div className="relative flex-1 min-h-[44px] max-h-[130px] flex items-center overflow-hidden">
-          {/* Visual Overlay Layer (Masked * and real text) */}
+          {/* Visual Overlay Layer (Masked runes or clear text) */}
           <div
             ref={overlayRef}
             aria-hidden="true"
@@ -155,9 +164,7 @@ export const StealthInput: React.FC<StealthInputProps> = ({ onSendMessage, disab
             disabled={disabled}
             rows={1}
             autoFocus
-            className={`w-full px-3.5 py-2.5 bg-transparent resize-none outline-none text-[15px] leading-relaxed font-serif ${
-              isPeeking ? 'text-[#ffffff]' : 'text-transparent'
-            } caret-[#ffffff] select-text`}
+            className="w-full px-3.5 py-2.5 bg-transparent resize-none outline-none text-[15px] leading-relaxed font-serif text-transparent caret-[#ffffff] select-text"
             placeholder=""
           />
         </div>
@@ -174,6 +181,7 @@ export const StealthInput: React.FC<StealthInputProps> = ({ onSendMessage, disab
               onTouchEnd={() => setIsPeeking(false)}
               onTouchCancel={() => setIsPeeking(false)}
               className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/[0.08] transition-all"
+              title="按住速览已输入文稿"
             >
               {isPeeking ? <EyeOff className="w-4 h-4 text-white" strokeWidth={1.5} /> : <Eye className="w-4 h-4" strokeWidth={1.5} />}
             </button>

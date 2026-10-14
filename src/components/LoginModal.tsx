@@ -230,13 +230,15 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onLogin, savedSession })
                   >
                     <div className="flex items-center gap-1.5">
                       <User className="w-3.5 h-3.5" strokeWidth={1.8} />
-                      <span className="font-medium text-sm">{user.name}</span>
+                      <span className={`font-medium text-sm ${user.name === '夜星' ? 'text-name-gold' : 'text-name-red'}`}>
+                        {user.name}
+                      </span>
                     </div>
                     <span
-                      className={`text-[10px] px-1.5 py-0.2 rounded ${
+                      className={`text-[10px] px-1.5 py-0.2 rounded font-serif ${
                         user.name === '夜星'
-                          ? 'seal-bg seal-red font-medium'
-                          : 'bg-white/[0.08] text-[#a1a7b8]'
+                          ? 'seal-bg text-[#e5c158] border border-[#e5c158]/30 font-medium'
+                          : 'bg-[#e05353]/10 text-[#e05353] border border-[#e05353]/30 font-medium'
                       }`}
                     >
                       {user.roleLabel}
