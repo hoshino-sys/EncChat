@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Shield, Users, LogOut, Copy, Check, Edit2, ShieldAlert } from 'lucide-react';
+import { LogOut, Check, Copy } from 'lucide-react';
 import { ConnectionState } from '../types/chat';
 
 interface ChatHeaderProps {
@@ -31,94 +31,69 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const statusColor = {
-    connected: 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]',
-    connecting: 'bg-amber-500 animate-ping',
-    disconnected: 'bg-rose-500',
-    error: 'bg-rose-500',
-  }[connectionState];
-
-  const statusText = {
-    connected: '实时加密已连接',
-    connecting: '正在重连中...',
-    disconnected: '未连接',
-    error: '连接异常',
+  const statusDotColor = {
+    connected: 'bg-[#5b9e7c]',
+    connecting: 'bg-[#b8924b] animate-pulse',
+    disconnected: 'bg-[#ab3838]',
+    error: 'bg-[#ab3838]',
   }[connectionState];
 
   return (
-    <header className="w-full shrink-0 px-3 md:px-6 py-2.5 bg-[#0e1019]/90 backdrop-blur-md border-b border-[#1d2235] flex items-center justify-between select-none z-20">
-      {/* Left: Brand & Room ID */}
+    <header className="w-full shrink-0 px-4 md:px-7 py-3 ink-panel border-b border-white/[0.06] flex items-center justify-between select-none z-20">
+      {/* Left: Brand & Room */}
       <div className="flex items-center gap-3">
+        {/* Brand Seal */}
         <div className="flex items-center gap-2">
-          <div className="p-1.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400">
-            <Shield className="w-4 h-4" />
-          </div>
-          <span className="font-bold tracking-tight text-sm text-slate-100 hidden sm:inline">
-            EncChat
+          <span className="w-5 h-5 rounded-md seal-bg seal-red flex items-center justify-center font-serif text-[11px] font-bold">
+            墨
+          </span>
+          <span className="font-serif tracking-widest text-sm text-[#e4e0d5] hidden sm:inline">
+            墨隐
           </span>
         </div>
 
-        {/* Room ID Tag */}
+        {/* Room Token */}
         <button
           onClick={handleCopyRoom}
-          className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-[#151825] hover:bg-[#1c2132] border border-[#23283c] text-xs font-mono text-slate-200 transition-all cursor-pointer group"
-          title="点击复制房间号"
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.06] text-xs font-serif text-[#c2baa8] transition-all cursor-pointer"
         >
-          <span className="text-slate-400 text-[11px]">#</span>
-          <span className="font-semibold text-slate-200 max-w-[110px] md:max-w-none truncate">{roomId}</span>
+          <span className="font-serif text-[#ece8df] max-w-[100px] md:max-w-none truncate">{roomId}</span>
           {copied ? (
-            <Check className="w-3 h-3 text-emerald-400" />
+            <Check className="w-3 h-3 text-[#5b9e7c]" strokeWidth={2} />
           ) : (
-            <Copy className="w-3 h-3 text-slate-400 group-hover:text-slate-200" />
+            <Copy className="w-3 h-3 text-slate-500 opacity-60" strokeWidth={1.5} />
           )}
         </button>
 
-        {/* Connection status dot & Peer count */}
+        {/* Subtle Status Indicator & Count */}
         <div
           onClick={connectionState !== 'connected' ? onReconnect : undefined}
-          className={`flex items-center gap-1.5 text-xs text-slate-400 ${
-            connectionState !== 'connected' ? 'cursor-pointer hover:text-slate-200' : ''
+          className={`flex items-center gap-1.5 text-xs text-slate-500 ${
+            connectionState !== 'connected' ? 'cursor-pointer hover:text-slate-300' : ''
           }`}
-          title={`${statusText}${relayUrl ? `\n中继服务: ${relayUrl}` : ''}${
-            connectionState !== 'connected' ? '\n(点击尝试手动重连)' : ''
-          }`}
+          title={relayUrl ? `中继: ${relayUrl}` : undefined}
         >
-          <span className={`w-2 h-2 rounded-full ${statusColor}`} />
-          <span className="hidden md:inline text-[11px] font-mono">{statusText}</span>
-          <span className="hidden md:inline text-slate-700">|</span>
-          <span className="flex items-center gap-1 text-[11px] font-mono text-slate-400">
-            <Users className="w-3 h-3 text-slate-400" />
-            <span>{peerCount}</span>
-          </span>
+          <span className={`w-1.5 h-1.5 rounded-full ${statusDotColor}`} />
+          <span className="font-serif text-[11px] text-[#787f90]">{peerCount}</span>
         </div>
-      </div>
-
-      {/* Center: Anti-peep hint badge (Prominent yet minimalist) */}
-      <div className="hidden lg:flex items-center gap-2 px-3 py-1 rounded-full bg-blue-950/20 border border-blue-800/30 text-[11px] font-mono text-blue-300">
-        <ShieldAlert className="w-3 h-3 text-blue-400" />
-        <span>Windows: 按住 Alt + 鼠标悬停查看 | 手机: 长按气泡查看</span>
       </div>
 
       {/* Right: User Nickname & Leave Room */}
       <div className="flex items-center gap-2">
-        {/* Custom Nickname button */}
+        {/* Custom Nickname */}
         <button
           onClick={onEditName}
-          className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-[#151825] hover:bg-[#1e2335] border border-[#23283c] text-xs text-slate-300 hover:text-white transition-all group"
-          title="点击修改昵称"
+          className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.06] text-xs font-serif text-[#d6d0c2] transition-all"
         >
-          <span className="text-blue-400 font-mono text-[11px]">@</span>
-          <span className="font-medium max-w-[80px] md:max-w-[120px] truncate">{userName}</span>
-          <Edit2 className="w-3 h-3 text-slate-400 group-hover:text-slate-200" />
+          <span>「{userName}」</span>
         </button>
 
         {/* Leave Room Button */}
         <button
           onClick={onLeaveRoom}
-          className="p-1.5 rounded-xl bg-slate-800/40 hover:bg-rose-950/60 border border-slate-700/40 hover:border-rose-700/60 text-slate-400 hover:text-rose-300 transition-all"
-          title="主动退出 / 关闭房间"
+          className="p-1.5 rounded-xl text-slate-500 hover:text-rose-400 hover:bg-white/[0.04] transition-all"
         >
-          <LogOut className="w-4 h-4" />
+          <LogOut className="w-4 h-4" strokeWidth={1.5} />
         </button>
       </div>
     </header>

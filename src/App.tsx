@@ -8,7 +8,6 @@ import { MessageList } from './components/MessageList';
 import { StealthInput } from './components/StealthInput';
 import { JoinRoomModal } from './components/JoinRoomModal';
 import { EditNameModal } from './components/EditNameModal';
-import { Eye, ShieldAlert } from 'lucide-react';
 
 const STORAGE_KEY = 'encchat_persistent_session_v1';
 
@@ -33,23 +32,19 @@ export const App: React.FC = () => {
   const networkRef = useRef<ChatNetworkService | null>(null);
   const cryptoKeyRef = useRef<CryptoKey | null>(null);
 
-  // Keep cryptoKeyRef in sync
   useEffect(() => {
     cryptoKeyRef.current = cryptoKey;
   }, [cryptoKey]);
 
-  // Handle incoming encrypted message from peer
+  // Handle incoming encrypted message
   const handleIncomingMessage = useCallback(async (msg: ChatMessage) => {
-    // Check for duplicates
     setMessages((prev) => {
       if (prev.some((m) => m.id === msg.id)) return prev;
 
-      // If it's our own echoed message, keep existing
       if (msg.isSelf) {
         return [...prev, msg];
       }
 
-      // Decrypt incoming message
       const key = cryptoKeyRef.current;
       if (key) {
         decryptMessage(msg.encrypted, key)
@@ -82,7 +77,6 @@ export const App: React.FC = () => {
     setSystemNotices((prev) => [...prev.slice(-10), notice]);
   }, []);
 
-  // Initialize crypto key and network connection when session changes
   useEffect(() => {
     if (!session) {
       if (networkRef.current) {
@@ -101,12 +95,10 @@ export const App: React.FC = () => {
     async function initRoom() {
       if (!session) return;
       try {
-        // Derive 256-bit AES-GCM key
         const key = await deriveKey(session.roomKey, session.roomId);
         if (!isMounted) return;
         setCryptoKey(key);
 
-        // Connect network relay
         const network = new ChatNetworkService({
           onMessage: handleIncomingMessage,
           onPeersUpdate: handlePeersUpdate,
@@ -117,7 +109,7 @@ export const App: React.FC = () => {
         networkRef.current = network;
         network.connect(session.roomId, session.userId, session.userName);
       } catch (err) {
-        console.error('Failed to initialize encrypted room:', err);
+        console.error('Failed to initialize room:', err);
       }
     }
 
@@ -132,7 +124,6 @@ export const App: React.FC = () => {
     };
   }, [session, handleIncomingMessage, handlePeersUpdate, handleStatusChange, handleSystemNotice]);
 
-  // Join or create room
   const handleJoinRoom = (newSession: RoomSession) => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(newSession));
@@ -142,9 +133,8 @@ export const App: React.FC = () => {
     setSession(newSession);
   };
 
-  // Leave room (explicit close)
   const handleLeaveRoom = () => {
-    if (window.confirm('确定要主动关闭/退出当前加密房间吗？\n退出后将清除本设备的房间密钥凭据。')) {
+    if (window.confirm('确认离席退室？')) {
       try {
         localStorage.removeItem(STORAGE_KEY);
       } catch (e) {
@@ -158,7 +148,6 @@ export const App: React.FC = () => {
     }
   };
 
-  // Update nickname
   const handleUpdateName = (newName: string) => {
     if (!session) return;
     const updated = { ...session, userName: newName };
@@ -173,7 +162,6 @@ export const App: React.FC = () => {
     }
   };
 
-  // Send message
   const handleSendMessage = async (text: string) => {
     if (!session || !cryptoKey || !networkRef.current) return;
 
@@ -186,23 +174,20 @@ export const App: React.FC = () => {
         senderName: session.userName,
         timestamp: Date.now(),
         encrypted,
-        decryptedText: text, // Sender already knows the plaintext
+        decryptedText: text,
         isSelf: true,
       };
 
-      // Add to local state immediately
       setMessages((prev) => [...prev, msg]);
-
-      // Broadcast to peers via network
       networkRef.current.sendMessage(msg);
     } catch (err) {
-      console.error('Failed to encrypt or send message:', err);
+      console.error('Failed to send message:', err);
     }
   };
 
   return (
-    <div className="flex flex-col h-[100dvh] w-full bg-[#090a0f] text-slate-100 overflow-hidden font-sans select-none">
-      {/* If no active session, show Join/Create Modal */}
+    <div className="flex flex-col h-[100dvh] w-full ink-bg text-[#ece8df] overflow-hidden select-none font-serif">
+      {/* Join/Create Modal */}
       {!session && (
         <JoinRoomModal onJoin={handleJoinRoom} defaultSession={session} />
       )}
@@ -222,31 +207,17 @@ export const App: React.FC = () => {
             onLeaveRoom={handleLeaveRoom}
           />
 
-          {/* Alt key active indicator banner for desktop */}
-          {isAltPressed && (
-            <div className="shrink-0 bg-emerald-500/10 border-b border-emerald-500/20 px-4 py-1 text-center text-xs font-mono text-emerald-400 flex items-center justify-center gap-2 animate-fade-in">
-              <Eye className="w-3.5 h-3.5" />
-              <span>Alt 键已激活：鼠标悬停消息即可透视解密明文</span>
-            </div>
-          )}
-
-          {/* Main Chat Messages Stream */}
-          <main className="flex-1 overflow-hidden flex flex-col relative max-w-4xl w-full mx-auto">
+          {/* Messages Stream */}
+          <main className="flex-1 overflow-hidden flex flex-col relative max-w-3xl w-full mx-auto">
             <MessageList
               messages={messages}
               systemNotices={systemNotices}
               isAltPressed={isAltPressed}
             />
 
-            {/* Bottom Anti-peeping Input Area */}
-            <div className="shrink-0 p-3 md:p-4 bg-[#090a0f]/90 backdrop-blur-lg border-t border-[#1b2030] pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
+            {/* Input Capsule Area */}
+            <div className="shrink-0 px-4 md:px-6 py-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
               <StealthInput onSendMessage={handleSendMessage} disabled={!cryptoKey} />
-              
-              {/* Mobile anti-peeping quick tip */}
-              <div className="flex md:hidden items-center justify-center gap-1.5 mt-2 text-[10px] text-slate-400 font-mono">
-                <ShieldAlert className="w-3 h-3 text-slate-400" />
-                <span>手机端：长按任意气泡可临时查看解密明文</span>
-              </div>
             </div>
           </main>
 
