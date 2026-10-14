@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { ChatMessage, RoomSession, ConnectionState, PeerUser } from './types/chat';
 import { deriveKey, encryptMessage, decryptMessage } from './services/crypto';
 import { ChatNetworkService } from './services/websocket';
-import { useAltKey } from './hooks/useAltKey';
+import { usePeekCombo } from './hooks/useAltKey';
 import { ChatHeader } from './components/ChatHeader';
 import { MessageList } from './components/MessageList';
 import { StealthInput } from './components/StealthInput';
@@ -13,6 +13,7 @@ import { AfkUnlockModal } from './components/AfkUnlockModal';
 import { getCharCount } from './utils/maskCipher';
 
 const STORAGE_KEY = 'encchat_user_session_v2';
+const AFK_LOCK_KEY = 'encchat_afk_locked_v2';
 
 export const App: React.FC = () => {
   const [session, setSession] = useState<RoomSession | null>(() => {
@@ -29,61 +30,95 @@ export const App: React.FC = () => {
   const [peers, setPeers] = useState<PeerUser[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [systemNotices, setSystemNotices] = useState<string[]>([]);
-  const [isAfkLocked, setIsAfkLocked] = useState(false);
+  
+  // Persistent AFK lock state: survives page reload (F5)
+  const [isAfkLocked, setIsAfkLocked] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem(AFK_LOCK_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  });
+
   const [showAfkUnlockModal, setShowAfkUnlockModal] = useState(false);
   const [showMobileMembers, setShowMobileMembers] = useState(false);
 
-  const isAltPressed = useAltKey();
+  // Combination peek hook: Alt + Space
+  const { isComboActive } = usePeekCombo();
+
   const networkRef = useRef<ChatNetworkService | null>(null);
   const cryptoKeyRef = useRef<CryptoKey | null>(null);
+  const sessionRef = useRef<RoomSession | null>(null);
 
   useEffect(() => {
     cryptoKeyRef.current = cryptoKey;
   }, [cryptoKey]);
 
-  // Handle incoming encrypted message
+  useEffect(() => {
+    sessionRef.current = session;
+  }, [session]);
+
+  // Handle incoming encrypted message with persistent isSelf identity check
   const handleIncomingMessage = useCallback(async (msg: ChatMessage) => {
     setMessages((prev) => {
       if (prev.some((m) => m.id === msg.id)) return prev;
 
-      if (msg.isSelf) {
-        return [...prev, msg];
+      const currentSession = sessionRef.current;
+      const isSelf = Boolean(
+        msg.isSelf ||
+        (currentSession && (msg.senderName === currentSession.userName || msg.senderId === currentSession.userId))
+      );
+      const normalizedMsg = { ...msg, isSelf };
+
+      if (normalizedMsg.isSelf) {
+        return [...prev, normalizedMsg];
       }
 
       const key = cryptoKeyRef.current;
       if (key) {
-        decryptMessage(msg.encrypted, key)
+        decryptMessage(normalizedMsg.encrypted, key)
           .then((plaintext) => {
             setMessages((current) =>
-              current.map((m) => (m.id === msg.id ? { ...m, decryptedText: plaintext } : m))
+              current.map((m) => (m.id === normalizedMsg.id ? { ...m, decryptedText: plaintext } : m))
             );
           })
           .catch((err) => {
-            console.warn('Decryption failed for message:', msg.id, err);
+            console.warn('Decryption failed for message:', normalizedMsg.id, err);
             setMessages((current) =>
-              current.map((m) => (m.id === msg.id ? { ...m, decryptionError: true } : m))
+              current.map((m) => (m.id === normalizedMsg.id ? { ...m, decryptionError: true } : m))
             );
           });
       }
 
-      return [...prev, msg];
+      return [...prev, normalizedMsg];
     });
   }, []);
 
+  // Handle history replay with persistent isSelf identity check
   const handleIncomingHistory = useCallback(async (historyList: ChatMessage[]) => {
     const key = cryptoKeyRef.current;
+    const currentSession = sessionRef.current;
+
     const decryptedList = await Promise.all(
       historyList.map(async (msg) => {
-        if (msg.decryptedText) return msg;
+        const isSelf = Boolean(
+          msg.isSelf ||
+          (currentSession && (msg.senderName === currentSession.userName || msg.senderId === currentSession.userId))
+        );
+
+        if (msg.decryptedText) {
+          return { ...msg, isSelf };
+        }
+
         if (key && msg.encrypted) {
           try {
             const plaintext = await decryptMessage(msg.encrypted, key);
-            return { ...msg, decryptedText: plaintext };
+            return { ...msg, isSelf, decryptedText: plaintext };
           } catch {
-            return { ...msg, decryptionError: true };
+            return { ...msg, isSelf, decryptionError: true };
           }
         }
-        return msg;
+        return { ...msg, isSelf };
       })
     );
 
@@ -167,6 +202,7 @@ export const App: React.FC = () => {
     if (window.confirm('确认离席退室？')) {
       try {
         localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem(AFK_LOCK_KEY);
       } catch (e) {
         console.warn('localStorage remove failed', e);
       }
@@ -185,12 +221,22 @@ export const App: React.FC = () => {
       setShowAfkUnlockModal(true);
     } else {
       setIsAfkLocked(true);
+      try {
+        localStorage.setItem(AFK_LOCK_KEY, 'true');
+      } catch (e) {
+        console.warn('localStorage write failed', e);
+      }
     }
   };
 
   const handleUnlockAfk = () => {
     setIsAfkLocked(false);
     setShowAfkUnlockModal(false);
+    try {
+      localStorage.removeItem(AFK_LOCK_KEY);
+    } catch (e) {
+      console.warn('localStorage remove failed', e);
+    }
   };
 
   // Keyboard shortcut lock listener: Esc OR (Alt+L / Ctrl+L)
@@ -198,7 +244,6 @@ export const App: React.FC = () => {
     if (!session) return;
 
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
-      // If modal is open and Esc pressed, ignore or let modal handle
       const isLockKey =
         e.key === 'Escape' ||
         ((e.altKey || e.ctrlKey) && e.key.toLowerCase() === 'l');
@@ -207,6 +252,9 @@ export const App: React.FC = () => {
         e.preventDefault();
         if (!isAfkLocked) {
           setIsAfkLocked(true);
+          try {
+            localStorage.setItem(AFK_LOCK_KEY, 'true');
+          } catch {}
         } else {
           setShowAfkUnlockModal(true);
         }
@@ -283,7 +331,8 @@ export const App: React.FC = () => {
                 <MessageList
                   messages={messages}
                   systemNotices={systemNotices}
-                  isAltPressed={isAltPressed}
+                  isComboActive={isComboActive}
+                  currentUserName={session.userName}
                   isAfkLocked={isAfkLocked}
                 />
 

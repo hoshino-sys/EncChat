@@ -16,7 +16,6 @@ export const StealthInput: React.FC<StealthInputProps> = ({ onSendMessage, disab
   const overlayRef = useRef<HTMLDivElement>(null);
   const maskTimerRef = useRef<number | null>(null);
   const isComposingRef = useRef(false);
-  const prevCharCountRef = useRef(0);
 
   // Sync scroll between textarea and overlay
   const handleScroll = () => {
@@ -25,43 +24,44 @@ export const StealthInput: React.FC<StealthInputProps> = ({ onSendMessage, disab
     }
   };
 
-  // Schedule masking for the latest typed character
-  const scheduleCharacterMasking = (newCharCount: number) => {
-    if (maskTimerRef.current) {
-      clearTimeout(maskTimerRef.current);
-    }
-
-    maskTimerRef.current = window.setTimeout(() => {
-      setMaskedCount(newCharCount);
-    }, 450);
-  };
-
   const handleTextChange = (val: string) => {
     const chars = Array.from(val);
     const newCount = chars.length;
-    const oldCount = prevCharCountRef.current;
-    prevCharCountRef.current = newCount;
     setText(val);
 
     if (newCount === 0) {
       setMaskedCount(0);
-      if (maskTimerRef.current) clearTimeout(maskTimerRef.current);
+      if (maskTimerRef.current) {
+        clearTimeout(maskTimerRef.current);
+        maskTimerRef.current = null;
+      }
       return;
     }
 
-    if (newCount < oldCount) {
-      // Deleting characters: adjust mask count
-      setMaskedCount((prev) => Math.min(prev, newCount));
+    if (newCount < maskedCount) {
+      // Deleting characters into the masked portion
+      setMaskedCount(newCount);
+      if (maskTimerRef.current) {
+        clearTimeout(maskTimerRef.current);
+        maskTimerRef.current = null;
+      }
       return;
     }
 
-    // Typing new character(s):
-    // Previous characters remain strictly locked in runes!
-    setMaskedCount((prev) => Math.max(prev, oldCount));
+    // Crucial rule: Any characters that have already been masked (maskedCount)
+    // NEVER unmask! They remain permanently locked as runes.
+    // The newly typed characters stay visible in plaintext.
+    // 1 second (1000ms) after typing stops, all current characters turn into runes.
+    if (maskTimerRef.current) {
+      clearTimeout(maskTimerRef.current);
+      maskTimerRef.current = null;
+    }
 
-    // Schedule newly typed character to lock after 450ms
     if (!isComposingRef.current) {
-      scheduleCharacterMasking(newCount);
+      maskTimerRef.current = window.setTimeout(() => {
+        setMaskedCount(newCount);
+        maskTimerRef.current = null;
+      }, 1000);
     }
   };
 
@@ -71,7 +71,10 @@ export const StealthInput: React.FC<StealthInputProps> = ({ onSendMessage, disab
 
   const handleCompositionStart = () => {
     isComposingRef.current = true;
-    if (maskTimerRef.current) clearTimeout(maskTimerRef.current);
+    if (maskTimerRef.current) {
+      clearTimeout(maskTimerRef.current);
+      maskTimerRef.current = null;
+    }
   };
 
   const handleCompositionEnd = (e: React.CompositionEvent<HTMLTextAreaElement>) => {
@@ -87,9 +90,9 @@ export const StealthInput: React.FC<StealthInputProps> = ({ onSendMessage, disab
     onSendMessage(trimmed);
     setText('');
     setMaskedCount(0);
-    prevCharCountRef.current = 0;
     if (maskTimerRef.current) {
       clearTimeout(maskTimerRef.current);
+      maskTimerRef.current = null;
     }
 
     if (textareaRef.current) {

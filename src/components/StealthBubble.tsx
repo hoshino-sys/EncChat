@@ -5,13 +5,15 @@ import { useScrambleDecrypt } from '../hooks/useScrambleDecrypt';
 
 interface StealthBubbleProps {
   message: ChatMessage;
-  isAltPressed: boolean;
+  isComboActive: boolean; // Alt + Space combination active
+  currentUserName?: string;
   isAfkLocked?: boolean;
 }
 
 export const StealthBubble: React.FC<StealthBubbleProps> = ({
   message,
-  isAltPressed,
+  isComboActive,
+  currentUserName,
   isAfkLocked = false,
 }) => {
   const [isHovered, setIsHovered] = useState(false);
@@ -36,12 +38,11 @@ export const StealthBubble: React.FC<StealthBubbleProps> = ({
   }, []);
 
   // Reveal condition:
-  // 1. Mobile & Click: Tap reveals for 3 seconds
-  // 2. PC: Right-click hold
-  // 3. PC: Alt + Hover
+  // 1. Mobile touch: Tap reveals for 3 seconds with countdown
+  // 2. PC Desktop: Alt + Space + Right-Click held down on the bubble
   const isRevealed =
     !isAfkLocked &&
-    (isTapActive || isRightClickDown || (isHovered && isAltPressed));
+    (isTapActive || (isComboActive && isRightClickDown && isHovered));
 
   // Format time (HH:mm) with lining numbers
   const timeString = useMemo(() => {
@@ -66,10 +67,13 @@ export const StealthBubble: React.FC<StealthBubbleProps> = ({
     isRevealed,
   });
 
-  // Handle single tap to show for 3 seconds (No floating window)
-  const handleBubbleClick = (e: React.MouseEvent) => {
-    // Ignore right click for tap logic
-    if (e.button === 2 || isAfkLocked) return;
+  // Handle mobile finger tap (3 seconds reveal) - PC mouse click is ignored!
+  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    // Only mobile touch taps trigger 3s reveal; PC mouse clicks do nothing
+    if (e.pointerType !== 'touch') {
+      return;
+    }
+    if (isAfkLocked) return;
 
     if ('vibrate' in navigator) {
       try {
@@ -78,11 +82,9 @@ export const StealthBubble: React.FC<StealthBubbleProps> = ({
     }
 
     if (isTapActive) {
-      // Toggle off if tapped again
       if (tapTimerRef.current) clearTimeout(tapTimerRef.current);
       setIsTapActive(false);
     } else {
-      // Reveal for 3 seconds
       setIsTapActive(true);
       if (tapTimerRef.current) clearTimeout(tapTimerRef.current);
       tapTimerRef.current = window.setTimeout(() => {
@@ -92,7 +94,7 @@ export const StealthBubble: React.FC<StealthBubbleProps> = ({
     }
   };
 
-  const handleMouseDown = (e: React.MouseEvent) => {
+  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.button === 2) {
       e.preventDefault();
       if (!isAfkLocked) {
@@ -101,13 +103,22 @@ export const StealthBubble: React.FC<StealthBubbleProps> = ({
     }
   };
 
-  const handleMouseUp = (e: React.MouseEvent) => {
+  const handleMouseUp = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.button === 2) {
       setIsRightClickDown(false);
     }
   };
 
-  const isSelf = message.isSelf;
+  const handleMouseLeave = () => {
+    setIsHovered(false);
+    setIsRightClickDown(false);
+  };
+
+  // Determine whether message is sent by current user across all devices/sessions
+  const isSelf = Boolean(
+    message.isSelf ||
+    (currentUserName && message.senderName === currentUserName)
+  );
   const isYeXing = message.senderName === '夜星';
 
   return (
@@ -144,13 +155,13 @@ export const StealthBubble: React.FC<StealthBubbleProps> = ({
 
       {/* White Frosted Glass Bubble (白透毛玻璃) */}
       <div
-        onClick={handleBubbleClick}
+        onPointerUp={handlePointerUp}
         onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
+        onMouseLeave={handleMouseLeave}
         onMouseDown={handleMouseDown}
         onMouseUp={handleMouseUp}
         onContextMenu={(e) => e.preventDefault()}
-        className={`relative max-w-[85%] md:max-w-[72%] rounded-2xl px-4 py-3 transition-all duration-200 cursor-pointer overflow-hidden ${
+        className={`relative max-w-[85%] md:max-w-[72%] rounded-2xl px-4 py-3 transition-all duration-200 overflow-hidden ${
           isRevealed
             ? 'white-glass-bubble-revealed shadow-[0_8px_32px_rgba(255,255,255,0.08)] scale-[1.01] animate-decipher-glow'
             : isSelf
@@ -182,7 +193,7 @@ export const StealthBubble: React.FC<StealthBubbleProps> = ({
           </div>
         )}
 
-        {/* 3-Second Countdown Progress Hairline (流光倒计时细线) */}
+        {/* 3-Second Countdown Progress Hairline (流光倒计时细线 - 仅移动端生效) */}
         {isTapActive && !isAfkLocked && (
           <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-white/10 pointer-events-none">
             <div className="h-full bg-gradient-to-r from-transparent via-white/80 to-transparent animate-countdown-3s" />

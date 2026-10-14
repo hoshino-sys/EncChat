@@ -5,14 +5,16 @@ import { StealthBubble } from './StealthBubble';
 interface MessageListProps {
   messages: ChatMessage[];
   systemNotices: string[];
-  isAltPressed: boolean;
+  isComboActive: boolean;
+  currentUserName?: string;
   isAfkLocked?: boolean;
 }
 
 export const MessageList: React.FC<MessageListProps> = ({
   messages,
   systemNotices,
-  isAltPressed,
+  isComboActive,
+  currentUserName,
   isAfkLocked = false,
 }) => {
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -37,7 +39,8 @@ export const MessageList: React.FC<MessageListProps> = ({
         <StealthBubble
           key={msg.id}
           message={msg}
-          isAltPressed={isAltPressed}
+          isComboActive={isComboActive}
+          currentUserName={currentUserName}
           isAfkLocked={isAfkLocked}
         />
       ))}

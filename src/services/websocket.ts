@@ -157,7 +157,7 @@ export class ChatNetworkService {
           if (data.message.roomId === this.roomId) {
             this.callbacks.onMessage({
               ...data.message,
-              isSelf: data.message.senderId === this.userId,
+              isSelf: data.message.senderName === this.userName || data.message.senderId === this.userId,
             });
           }
         }
@@ -167,7 +167,7 @@ export class ChatNetworkService {
         if (Array.isArray(data.messages)) {
           const list = data.messages.map((m: any) => ({
             ...m,
-            isSelf: m.senderId === this.userId,
+            isSelf: m.senderName === this.userName || m.senderId === this.userId,
           }));
           this.callbacks.onHistory(list);
         }

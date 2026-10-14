@@ -161,7 +161,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onLogin, savedSession })
 
       if (authSuccess) {
         const role = selectedUser === '夜星' ? 'admin' : 'user';
-        const userId = savedSession?.userId || `u_${Math.random().toString(36).substring(2, 9)}`;
+        const userId = selectedUser === '夜星' ? 'user_yexing' : 'user_xiaoyexing';
 
         onLogin({
           roomId: '墨隐阁',
