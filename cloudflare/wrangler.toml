@@ -2,6 +2,10 @@ name = "encchat-relay"
 main = "worker.ts"
 compatibility_date = "2024-04-01"
 
+routes = [
+  { pattern = "chat.nightstar.top/ws*", zone_name = "nightstar.top" }
+]
+
 [durable_objects]
 bindings = [
   { name = "CHAT_ROOM", class_name = "ChatRoom" }

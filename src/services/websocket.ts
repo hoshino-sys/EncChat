@@ -45,7 +45,15 @@ export class ChatNetworkService {
     }
 
     // Determine WebSocket endpoint
-    const savedCustomUrl = typeof window !== 'undefined' ? localStorage.getItem('encchat_custom_ws_url') : null;
+    let savedCustomUrl = typeof window !== 'undefined' ? localStorage.getItem('encchat_custom_ws_url') : null;
+    // Auto-clean old .workers.dev domain if it was saved, since it is blocked in mainland China
+    if (savedCustomUrl && savedCustomUrl.includes('.workers.dev')) {
+      try {
+        localStorage.removeItem('encchat_custom_ws_url');
+      } catch {}
+      savedCustomUrl = null;
+    }
+
     const envWsUrl = import.meta.env.VITE_WS_URL;
 
     if (customWsUrl) {
@@ -62,8 +70,8 @@ export class ChatNetworkService {
       if (window.location.port === '5173') {
         this.wsUrl = `${wsProto}//${window.location.hostname}:8787/ws`;
       } else {
-        // In Cloudflare Pages / custom domain, connect directly to our deployed Cloudflare Worker relay
-        this.wsUrl = 'wss://encchat-relay.19860620884.workers.dev/ws';
+        // Direct same-origin WebSocket: chat.nightstar.top/ws (bypasses China GFW blocks on workers.dev)
+        this.wsUrl = `${wsProto}//${window.location.host}/ws`;
       }
     }
 
