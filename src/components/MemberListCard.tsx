@@ -1,6 +1,6 @@
 import React from 'react';
 import { PeerUser, ConnectionState } from '../types/chat';
-import { Lock, Unlock } from 'lucide-react';
+import { Lock, Unlock, Users } from 'lucide-react';
 
 interface MemberListCardProps {
   currentUser: '夜星' | '小夜星';
@@ -48,16 +48,12 @@ export const MemberListCard: React.FC<MemberListCardProps> = ({
       {/* Top Section */}
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-white/10">
-          <div className="flex items-center gap-2.5">
-            <span className="w-6 h-6 rounded-md seal-bg seal-red flex items-center justify-center font-serif text-xs font-bold shadow-[0_2px_8px_rgba(171,56,56,0.3)]">
-              墨
-            </span>
-            <div>
-              <h2 className="font-serif text-sm tracking-widest text-[#ffffff] font-medium">
-                墨隐 · 席位
-              </h2>
-            </div>
+        <div className="flex items-center justify-between pb-3.5 border-b border-white/10">
+          <div className="flex items-center gap-2">
+            <Users className="w-4 h-4 text-[#d0d6e5]" strokeWidth={1.8} />
+            <h2 className="font-serif text-sm tracking-widest text-[#ffffff] font-medium">
+              席位名册
+            </h2>
           </div>
 
           {/* Connection badge */}

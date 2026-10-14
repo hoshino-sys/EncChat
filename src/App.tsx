@@ -8,6 +8,7 @@ import { MessageList } from './components/MessageList';
 import { StealthInput } from './components/StealthInput';
 import { LoginModal } from './components/LoginModal';
 import { MemberListCard } from './components/MemberListCard';
+import { MobileMemberModal } from './components/MobileMemberModal';
 import { AfkUnlockModal } from './components/AfkUnlockModal';
 import { getCharCount } from './utils/maskCipher';
 
@@ -30,6 +31,7 @@ export const App: React.FC = () => {
   const [systemNotices, setSystemNotices] = useState<string[]>([]);
   const [isAfkLocked, setIsAfkLocked] = useState(false);
   const [showAfkUnlockModal, setShowAfkUnlockModal] = useState(false);
+  const [showMobileMembers, setShowMobileMembers] = useState(false);
 
   const isAltPressed = useAltKey();
   const networkRef = useRef<ChatNetworkService | null>(null);
@@ -149,6 +151,7 @@ export const App: React.FC = () => {
       }
       setSession(null);
       setIsAfkLocked(false);
+      setShowMobileMembers(false);
     }
   };
 
@@ -191,55 +194,70 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="flex h-[100dvh] w-full ink-bg text-[#ece8df] overflow-hidden select-none font-serif">
+    <div className="flex flex-col h-[100dvh] w-full ink-bg text-[#ece8df] overflow-hidden select-none font-serif">
       {/* Login Modal */}
       {!session && <LoginModal onLogin={handleLogin} savedSession={session} />}
 
       {/* Active Chamber Layout */}
       {session && (
-        <div className="flex w-full h-full overflow-hidden">
-          {/* Desktop Left Sidebar: White Frosted Glass Card */}
-          <aside className="hidden lg:flex flex-col w-72 shrink-0 p-4 pr-1 h-full">
-            <MemberListCard
-              currentUser={session.userName}
-              peers={peers}
-              connectionState={connectionState}
-              isAfkLocked={isAfkLocked}
-              onToggleAfk={handleToggleAfk}
-            />
-          </aside>
+        <div className="flex flex-col w-full h-full overflow-hidden">
+          {/* Full-Width Unified Top Header */}
+          <ChatHeader
+            roomId={session.roomId}
+            userName={session.userName}
+            userRole={session.role}
+            peerCount={peers.length > 0 ? peers.length : 1}
+            connectionState={connectionState}
+            isAfkLocked={isAfkLocked}
+            onToggleAfk={handleToggleAfk}
+            onOpenMembers={() => setShowMobileMembers(true)}
+            onReconnect={() => networkRef.current?.reconnect()}
+            onLeaveRoom={handleLeaveRoom}
+          />
 
-          {/* Main Chat Flow */}
-          <div className="flex-1 flex flex-col h-full overflow-hidden">
-            {/* Header */}
-            <ChatHeader
-              roomId={session.roomId}
-              userName={session.userName}
-              userRole={session.role}
-              peerCount={peers.length > 0 ? peers.length : 1}
-              connectionState={connectionState}
-              isAfkLocked={isAfkLocked}
-              onToggleAfk={handleToggleAfk}
-              onReconnect={() => networkRef.current?.reconnect()}
-              onLeaveRoom={handleLeaveRoom}
-            />
-
-            {/* Messages Stream */}
-            <main className="flex-1 overflow-hidden flex flex-col relative max-w-3xl w-full mx-auto">
-              <MessageList
-                messages={messages}
-                systemNotices={systemNotices}
-                isAltPressed={isAltPressed}
+          {/* Body: Left Sidebar (Desktop) + Right Chat Stream */}
+          <div className="flex-1 flex w-full overflow-hidden">
+            {/* Desktop Left Sidebar: White Frosted Glass Card */}
+            <aside className="hidden md:flex flex-col w-64 lg:w-72 shrink-0 p-3 lg:p-4 pr-1 h-full">
+              <MemberListCard
+                currentUser={session.userName}
+                peers={peers}
+                connectionState={connectionState}
                 isAfkLocked={isAfkLocked}
+                onToggleAfk={handleToggleAfk}
               />
+            </aside>
 
-              {/* Input Capsule Area */}
-              <div className="shrink-0 px-4 md:px-6 py-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
-                <StealthInput onSendMessage={handleSendMessage} disabled={!cryptoKey} />
-              </div>
-            </main>
+            {/* Main Chat Flow */}
+            <div className="flex-1 flex flex-col h-full overflow-hidden">
+              <main className="flex-1 overflow-hidden flex flex-col relative max-w-3xl w-full mx-auto">
+                <MessageList
+                  messages={messages}
+                  systemNotices={systemNotices}
+                  isAltPressed={isAltPressed}
+                  isAfkLocked={isAfkLocked}
+                />
+
+                {/* Input Capsule Area */}
+                <div className="shrink-0 px-4 md:px-6 py-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
+                  <StealthInput onSendMessage={handleSendMessage} disabled={!cryptoKey} />
+                </div>
+              </main>
+            </div>
           </div>
         </div>
+      )}
+
+      {/* Mobile Member Roster Modal */}
+      {session && showMobileMembers && (
+        <MobileMemberModal
+          currentUser={session.userName}
+          peers={peers}
+          connectionState={connectionState}
+          isAfkLocked={isAfkLocked}
+          onToggleAfk={handleToggleAfk}
+          onClose={() => setShowMobileMembers(false)}
+        />
       )}
 
       {/* AFK Unlock Modal */}
