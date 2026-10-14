@@ -162,7 +162,7 @@ export const MemberListCard: React.FC<MemberListCardProps> = ({
             ) : (
               <Unlock className="w-3.5 h-3.5 text-[#a8b0c0]" strokeWidth={1.8} />
             )}
-            <span>{isAfkLocked ? '席位已暂离 (锁定中)' : '暂离隐匿'}</span>
+            <span>{isAfkLocked ? '席位已暂离 (锁定中)' : '暂离隐匿 (Esc)'}</span>
           </div>
           <span className="text-[10px] opacity-60">
             {isAfkLocked ? '点击解锁' : '锁闭查阅'}

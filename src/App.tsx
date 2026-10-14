@@ -193,6 +193,30 @@ export const App: React.FC = () => {
     setShowAfkUnlockModal(false);
   };
 
+  // Keyboard shortcut lock listener: Esc OR (Alt+L / Ctrl+L)
+  useEffect(() => {
+    if (!session) return;
+
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      // If modal is open and Esc pressed, ignore or let modal handle
+      const isLockKey =
+        e.key === 'Escape' ||
+        ((e.altKey || e.ctrlKey) && e.key.toLowerCase() === 'l');
+
+      if (isLockKey) {
+        e.preventDefault();
+        if (!isAfkLocked) {
+          setIsAfkLocked(true);
+        } else {
+          setShowAfkUnlockModal(true);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, [session, isAfkLocked]);
+
   const handleSendMessage = async (text: string) => {
     if (!session || !cryptoKey || !networkRef.current) return;
 

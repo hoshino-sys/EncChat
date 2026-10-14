@@ -94,7 +94,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
               ? 'bg-[#ab3838]/20 border border-[#ab3838]/40 text-[#ffb0b0] hover:bg-[#ab3838]/30 shadow-[0_2px_12px_rgba(171,56,56,0.3)]'
               : 'bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-[#d8d4c8] hover:text-white'
           }`}
-          title={isAfkLocked ? '点击输入密符解除暂离' : '点击暂离并锁定笔迹'}
+          title={isAfkLocked ? '点击或按 Esc / Alt+L 解除暂离' : '点击或按 Esc / Alt+L 立即隐匿锁定'}
         >
           {isAfkLocked ? (
             <>
