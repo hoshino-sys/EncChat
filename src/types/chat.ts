@@ -9,17 +9,22 @@ export interface ChatMessage {
   senderId: string;
   senderName: string;
   timestamp: number;
+  charCount?: number; // Exact character count for 1:1 masked rune rendering
   encrypted: EncryptedPayload;
   decryptedText?: string; // Decrypted plaintext cached in memory on client
   decryptionError?: boolean;
   isSelf?: boolean;
 }
 
+export type UserRole = 'admin' | 'user';
+
 export interface RoomSession {
   roomId: string;
   roomKey: string; // Plaintext passphrase used to derive AES key
   userId: string;
-  userName: string;
+  userName: '夜星' | '小夜星';
+  role: UserRole;
+  authHash: string;
 }
 
 export type ConnectionState = 'disconnected' | 'connecting' | 'connected' | 'error';
@@ -27,5 +32,6 @@ export type ConnectionState = 'disconnected' | 'connecting' | 'connected' | 'err
 export interface PeerUser {
   id: string;
   name: string;
+  role?: UserRole;
   joinedAt: number;
 }

@@ -1,19 +1,25 @@
 import React, { useState, useMemo } from 'react';
 import { ChatMessage } from '../types/chat';
+import { generateMaskedRunes, getCharCount } from '../utils/maskCipher';
 
 interface StealthBubbleProps {
   message: ChatMessage;
   isAltPressed: boolean;
+  isAfkLocked?: boolean;
 }
 
-export const StealthBubble: React.FC<StealthBubbleProps> = ({ message, isAltPressed }) => {
+export const StealthBubble: React.FC<StealthBubbleProps> = ({
+  message,
+  isAltPressed,
+  isAfkLocked = false,
+}) => {
   const [isHovered, setIsHovered] = useState(false);
   const [isTouched, setIsTouched] = useState(false);
 
-  // Reveal condition: Windows (Alt + Hover) OR Mobile (Touch and hold)
-  const isRevealed = (isHovered && isAltPressed) || isTouched;
+  // Reveal condition: When NOT in AFK lock, and (Alt+Hover on PC OR Touch+Hold on Mobile)
+  const isRevealed = !isAfkLocked && ((isHovered && isAltPressed) || isTouched);
 
-  // Format time (HH:mm)
+  // Format time (HH:mm) with lining numbers
   const timeString = useMemo(() => {
     const date = new Date(message.timestamp);
     const h = date.getHours().toString().padStart(2, '0');
@@ -21,14 +27,16 @@ export const StealthBubble: React.FC<StealthBubbleProps> = ({ message, isAltPres
     return `${h}:${m}`;
   }, [message.timestamp]);
 
-  // Abstract ink dot mask (elegant spacing, completely neutral)
-  const maskedDots = useMemo(() => {
-    const len = message.decryptedText ? Math.max(message.decryptedText.length, 4) : 8;
-    const count = Math.min(Math.max(len, 6), 18);
-    return '· '.repeat(count).trim();
-  }, [message.decryptedText]);
+  // Exact 1-to-1 Esoteric Rune Masking
+  const maskedGlyphs = useMemo(() => {
+    const count = message.decryptedText
+      ? getCharCount(message.decryptedText)
+      : (message.charCount || 6);
+    return generateMaskedRunes(count, message.id || String(message.timestamp));
+  }, [message.decryptedText, message.charCount, message.id, message.timestamp]);
 
   const handleTouchStart = () => {
+    if (isAfkLocked) return;
     setIsTouched(true);
     if ('vibrate' in navigator) {
       try {
@@ -42,54 +50,70 @@ export const StealthBubble: React.FC<StealthBubbleProps> = ({ message, isAltPres
   };
 
   const isSelf = message.isSelf;
+  const isAdmin = message.senderName === '夜星';
 
   return (
     <div
-      className={`group flex flex-col mb-3.5 transition-all duration-300 select-none ${
+      className={`group flex flex-col mb-4 transition-all duration-300 select-none ${
         isSelf ? 'items-end' : 'items-start'
       }`}
     >
-      {/* Sender name & time */}
-      <div className="flex items-center gap-2 px-1.5 mb-1 text-[11px] font-serif text-[#878d99] tracking-wider">
-        <span className={isSelf ? 'text-[#c2baa8]' : 'text-[#9c9fa6]'}>
-          {message.senderName}
+      {/* Sender info & time */}
+      <div className="flex items-center gap-2 px-1.5 mb-1.5 text-[11px] font-serif tracking-wider">
+        <div className="flex items-center gap-1.5">
+          <span className={isSelf ? 'text-[#ffffff] font-medium' : 'text-[#cfd3dc]'}>
+            {message.senderName}
+          </span>
+          <span
+            className={`text-[9px] px-1.5 py-0.2 rounded font-serif ${
+              isAdmin
+                ? 'seal-bg seal-red font-medium'
+                : 'bg-white/[0.06] text-[#9ba0ad] border border-white/10'
+            }`}
+          >
+            {isAdmin ? '管理员' : '用户'}
+          </span>
+        </div>
+        <span className="opacity-45 text-[10px] font-mono lining-nums tabular-nums text-[#a4a9b6]">
+          {timeString}
         </span>
-        <span className="opacity-40 text-[9px] font-mono">{timeString}</span>
       </div>
 
-      {/* Frosted Glass Ink Bubble */}
+      {/* White Frosted Glass Bubble (白透毛玻璃) */}
       <div
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
         onTouchCancel={handleTouchEnd}
-        className={`relative max-w-[85%] md:max-w-[70%] rounded-2xl px-4 py-3 transition-all duration-200 cursor-pointer ink-panel-bubble ${
+        className={`relative max-w-[85%] md:max-w-[72%] rounded-2xl px-4 py-3 transition-all duration-200 cursor-pointer ${
           isRevealed
-            ? isSelf
-              ? 'bg-[#1b1e28]/80 border-white/20 shadow-[0_4px_28px_rgba(0,0,0,0.6)]'
-              : 'bg-[#181b24]/80 border-white/20 shadow-[0_4px_28px_rgba(0,0,0,0.6)]'
+            ? 'white-glass-bubble-revealed'
             : isSelf
-            ? 'hover:border-white/10'
-            : 'hover:border-white/10'
+            ? 'white-glass-bubble hover:border-white/30 hover:bg-white/[0.11]'
+            : 'white-glass-bubble hover:border-white/30 hover:bg-white/[0.11]'
         }`}
       >
         {isRevealed ? (
           /* Decrypted Plaintext */
           <div className="animate-fade-in">
             {message.decryptionError ? (
-              <span className="text-slate-500 text-xs font-serif tracking-widest">[不符]</span>
+              <span className="text-slate-400 text-xs font-serif tracking-widest">[解印有误]</span>
             ) : (
-              <div className="whitespace-pre-wrap break-words text-[14px] md:text-[15px] leading-relaxed font-serif text-[#f4f1ea] tracking-wide">
+              <div className="whitespace-pre-wrap break-words text-[14px] md:text-[15px] leading-relaxed font-serif text-[#ffffff] tracking-wide select-text">
                 {message.decryptedText || ''}
               </div>
             )}
           </div>
         ) : (
-          /* Quiet Ink Mist Mask */
-          <div className="py-0.5">
-            <span className="text-[#646a78] font-serif text-sm tracking-[0.35em] select-none block">
-              {maskedDots}
+          /* 1-to-1 Esoteric Rune Glyphs Mask */
+          <div className="py-0.5 overflow-hidden">
+            <span
+              className={`font-serif text-[14px] md:text-[15px] tracking-[0.25em] select-none block transition-opacity duration-200 ${
+                isAfkLocked ? 'text-[#505562] opacity-70' : 'text-[#a3abb8] opacity-85'
+              }`}
+            >
+              {maskedGlyphs}
             </span>
           </div>
         )}

@@ -13,6 +13,7 @@ export class ChatNetworkService {
   private roomId: string = '';
   private userId: string = '';
   private userName: string = '';
+  private authHash: string = '';
   private wsUrl: string = '';
   private reconnectTimer: number | null = null;
   private pingInterval: number | null = null;
@@ -23,11 +24,12 @@ export class ChatNetworkService {
     this.callbacks = callbacks;
   }
 
-  public connect(roomId: string, userId: string, userName: string, customWsUrl?: string) {
+  public connect(roomId: string, userId: string, userName: string, authHash?: string, customWsUrl?: string) {
     this.isExplicitlyClosed = false;
     this.roomId = roomId;
     this.userId = userId;
     this.userName = userName;
+    this.authHash = authHash || '';
 
     // Initialize BroadcastChannel for instant local cross-tab / cross-window sync
     if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
@@ -109,6 +111,7 @@ export class ChatNetworkService {
           roomId: this.roomId,
           userId: this.userId,
           userName: this.userName,
+          authHash: this.authHash,
         });
       };
 
@@ -185,6 +188,10 @@ export class ChatNetworkService {
 
       case 'pong':
         // Heartbeat received
+        break;
+
+      case 'auth_error':
+        this.callbacks.onSystemNotice(`身份校验未过: ${data.error || '未授权'}`);
         break;
     }
   }

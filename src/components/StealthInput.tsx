@@ -130,8 +130,8 @@ export const StealthInput: React.FC<StealthInputProps> = ({ onSendMessage, disab
 
   return (
     <div className="w-full relative select-none">
-      {/* Frosted Glass Input Capsule */}
-      <div className="relative flex items-end gap-2 p-1.5 rounded-2xl ink-panel transition-all shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
+      {/* High-Contrast White Frosted Glass Input Capsule */}
+      <div className="relative flex items-end gap-2 p-1.5 rounded-2xl white-glass-input transition-all duration-200 focus-within:border-white/50 focus-within:bg-white/[0.12]">
         {/* Dual Layer Container */}
         <div className="relative flex-1 min-h-[44px] max-h-[130px] flex items-center overflow-hidden">
           {/* Visual Overlay Layer (Masked * and real text) */}
@@ -156,8 +156,8 @@ export const StealthInput: React.FC<StealthInputProps> = ({ onSendMessage, disab
             rows={1}
             autoFocus
             className={`w-full px-3.5 py-2.5 bg-transparent resize-none outline-none text-[15px] leading-relaxed font-serif ${
-              isPeeking ? 'text-[#ece8df]' : 'text-transparent'
-            } caret-[#ece8df] select-text`}
+              isPeeking ? 'text-[#ffffff]' : 'text-transparent'
+            } caret-[#ffffff] select-text`}
             placeholder=""
           />
         </div>
@@ -173,9 +173,9 @@ export const StealthInput: React.FC<StealthInputProps> = ({ onSendMessage, disab
               onTouchStart={() => setIsPeeking(true)}
               onTouchEnd={() => setIsPeeking(false)}
               onTouchCancel={() => setIsPeeking(false)}
-              className="p-2 rounded-xl text-slate-500 hover:text-slate-300 hover:bg-white/[0.04] transition-all"
+              className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/[0.08] transition-all"
             >
-              {isPeeking ? <EyeOff className="w-4 h-4 text-slate-300" strokeWidth={1.5} /> : <Eye className="w-4 h-4" strokeWidth={1.5} />}
+              {isPeeking ? <EyeOff className="w-4 h-4 text-white" strokeWidth={1.5} /> : <Eye className="w-4 h-4" strokeWidth={1.5} />}
             </button>
           )}
 
@@ -185,11 +185,11 @@ export const StealthInput: React.FC<StealthInputProps> = ({ onSendMessage, disab
             disabled={!text.trim() || disabled}
             className={`p-2.5 rounded-xl transition-all duration-200 flex items-center justify-center ${
               text.trim() && !disabled
-                ? 'bg-[#eae6dc] text-[#111317] hover:bg-white shadow-[0_2px_12px_rgba(255,255,255,0.12)] active:scale-95'
-                : 'text-slate-700 cursor-not-allowed'
+                ? 'bg-white text-[#0f1117] hover:bg-[#fafafa] shadow-[0_2px_16px_rgba(255,255,255,0.2)] active:scale-95'
+                : 'text-slate-600 cursor-not-allowed'
             }`}
           >
-            <ArrowUp className="w-4 h-4" strokeWidth={2} />
+            <ArrowUp className="w-4 h-4" strokeWidth={2.2} />
           </button>
         </div>
       </div>

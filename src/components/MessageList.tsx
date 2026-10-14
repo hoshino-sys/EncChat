@@ -6,12 +6,14 @@ interface MessageListProps {
   messages: ChatMessage[];
   systemNotices: string[];
   isAltPressed: boolean;
+  isAfkLocked?: boolean;
 }
 
 export const MessageList: React.FC<MessageListProps> = ({
   messages,
   systemNotices,
   isAltPressed,
+  isAfkLocked = false,
 }) => {
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -24,7 +26,7 @@ export const MessageList: React.FC<MessageListProps> = ({
       {/* System Notices */}
       {systemNotices.map((notice, idx) => (
         <div key={`notice-${idx}`} className="flex justify-center my-2">
-          <div className="px-3 py-0.5 rounded-full bg-white/[0.02] border border-white/[0.04] text-[11px] font-serif text-[#747b8c] tracking-wider animate-fade-in">
+          <div className="px-3 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] text-[11px] font-serif text-[#9da3b2] tracking-wider animate-fade-in">
             {notice}
           </div>
         </div>
@@ -32,7 +34,12 @@ export const MessageList: React.FC<MessageListProps> = ({
 
       {/* Messages */}
       {messages.map((msg) => (
-        <StealthBubble key={msg.id} message={msg} isAltPressed={isAltPressed} />
+        <StealthBubble
+          key={msg.id}
+          message={msg}
+          isAltPressed={isAltPressed}
+          isAfkLocked={isAfkLocked}
+        />
       ))}
 
       <div ref={bottomRef} className="h-4" />

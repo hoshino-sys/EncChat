@@ -6,10 +6,12 @@ import { useAltKey } from './hooks/useAltKey';
 import { ChatHeader } from './components/ChatHeader';
 import { MessageList } from './components/MessageList';
 import { StealthInput } from './components/StealthInput';
-import { JoinRoomModal } from './components/JoinRoomModal';
-import { EditNameModal } from './components/EditNameModal';
+import { LoginModal } from './components/LoginModal';
+import { MemberListCard } from './components/MemberListCard';
+import { AfkUnlockModal } from './components/AfkUnlockModal';
+import { getCharCount } from './utils/maskCipher';
 
-const STORAGE_KEY = 'encchat_persistent_session_v1';
+const STORAGE_KEY = 'encchat_user_session_v2';
 
 export const App: React.FC = () => {
   const [session, setSession] = useState<RoomSession | null>(() => {
@@ -26,7 +28,8 @@ export const App: React.FC = () => {
   const [peers, setPeers] = useState<PeerUser[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [systemNotices, setSystemNotices] = useState<string[]>([]);
-  const [isEditingName, setIsEditingName] = useState(false);
+  const [isAfkLocked, setIsAfkLocked] = useState(false);
+  const [showAfkUnlockModal, setShowAfkUnlockModal] = useState(false);
 
   const isAltPressed = useAltKey();
   const networkRef = useRef<ChatNetworkService | null>(null);
@@ -107,9 +110,9 @@ export const App: React.FC = () => {
         });
 
         networkRef.current = network;
-        network.connect(session.roomId, session.userId, session.userName);
+        network.connect(session.roomId, session.userId, session.userName, session.authHash);
       } catch (err) {
-        console.error('Failed to initialize room:', err);
+        console.error('Failed to initialize chamber:', err);
       }
     }
 
@@ -124,7 +127,7 @@ export const App: React.FC = () => {
     };
   }, [session, handleIncomingMessage, handlePeersUpdate, handleStatusChange, handleSystemNotice]);
 
-  const handleJoinRoom = (newSession: RoomSession) => {
+  const handleLogin = (newSession: RoomSession) => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(newSession));
     } catch (e) {
@@ -145,21 +148,21 @@ export const App: React.FC = () => {
         networkRef.current = null;
       }
       setSession(null);
+      setIsAfkLocked(false);
     }
   };
 
-  const handleUpdateName = (newName: string) => {
-    if (!session) return;
-    const updated = { ...session, userName: newName };
-    setSession(updated);
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-    } catch (e) {
-      console.warn('localStorage write failed', e);
+  const handleToggleAfk = () => {
+    if (isAfkLocked) {
+      setShowAfkUnlockModal(true);
+    } else {
+      setIsAfkLocked(true);
     }
-    if (networkRef.current) {
-      networkRef.current.updateUserName(newName);
-    }
+  };
+
+  const handleUnlockAfk = () => {
+    setIsAfkLocked(false);
+    setShowAfkUnlockModal(false);
   };
 
   const handleSendMessage = async (text: string) => {
@@ -167,12 +170,14 @@ export const App: React.FC = () => {
 
     try {
       const encrypted = await encryptMessage(text, cryptoKey);
+      const charCount = getCharCount(text);
       const msg: ChatMessage = {
         id: `msg_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
         roomId: session.roomId,
         senderId: session.userId,
         senderName: session.userName,
         timestamp: Date.now(),
+        charCount,
         encrypted,
         decryptedText: text,
         isSelf: true,
@@ -186,50 +191,63 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-[100dvh] w-full ink-bg text-[#ece8df] overflow-hidden select-none font-serif">
-      {/* Join/Create Modal */}
-      {!session && (
-        <JoinRoomModal onJoin={handleJoinRoom} defaultSession={session} />
+    <div className="flex h-[100dvh] w-full ink-bg text-[#ece8df] overflow-hidden select-none font-serif">
+      {/* Login Modal */}
+      {!session && <LoginModal onLogin={handleLogin} savedSession={session} />}
+
+      {/* Active Chamber Layout */}
+      {session && (
+        <div className="flex w-full h-full overflow-hidden">
+          {/* Desktop Left Sidebar: White Frosted Glass Card */}
+          <aside className="hidden lg:flex flex-col w-72 shrink-0 p-4 pr-1 h-full">
+            <MemberListCard
+              currentUser={session.userName}
+              peers={peers}
+              connectionState={connectionState}
+              isAfkLocked={isAfkLocked}
+              onToggleAfk={handleToggleAfk}
+            />
+          </aside>
+
+          {/* Main Chat Flow */}
+          <div className="flex-1 flex flex-col h-full overflow-hidden">
+            {/* Header */}
+            <ChatHeader
+              roomId={session.roomId}
+              userName={session.userName}
+              userRole={session.role}
+              peerCount={peers.length > 0 ? peers.length : 1}
+              connectionState={connectionState}
+              isAfkLocked={isAfkLocked}
+              onToggleAfk={handleToggleAfk}
+              onReconnect={() => networkRef.current?.reconnect()}
+              onLeaveRoom={handleLeaveRoom}
+            />
+
+            {/* Messages Stream */}
+            <main className="flex-1 overflow-hidden flex flex-col relative max-w-3xl w-full mx-auto">
+              <MessageList
+                messages={messages}
+                systemNotices={systemNotices}
+                isAltPressed={isAltPressed}
+                isAfkLocked={isAfkLocked}
+              />
+
+              {/* Input Capsule Area */}
+              <div className="shrink-0 px-4 md:px-6 py-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
+                <StealthInput onSendMessage={handleSendMessage} disabled={!cryptoKey} />
+              </div>
+            </main>
+          </div>
+        </div>
       )}
 
-      {/* Active Room View */}
-      {session && (
-        <>
-          {/* Header */}
-          <ChatHeader
-            roomId={session.roomId}
-            userName={session.userName}
-            peerCount={peers.length > 0 ? peers.length : 1}
-            connectionState={connectionState}
-            relayUrl={networkRef.current?.getWsUrl()}
-            onReconnect={() => networkRef.current?.reconnect()}
-            onEditName={() => setIsEditingName(true)}
-            onLeaveRoom={handleLeaveRoom}
-          />
-
-          {/* Messages Stream */}
-          <main className="flex-1 overflow-hidden flex flex-col relative max-w-3xl w-full mx-auto">
-            <MessageList
-              messages={messages}
-              systemNotices={systemNotices}
-              isAltPressed={isAltPressed}
-            />
-
-            {/* Input Capsule Area */}
-            <div className="shrink-0 px-4 md:px-6 py-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
-              <StealthInput onSendMessage={handleSendMessage} disabled={!cryptoKey} />
-            </div>
-          </main>
-
-          {/* Edit Name Modal */}
-          {isEditingName && (
-            <EditNameModal
-              currentName={session.userName}
-              onSave={handleUpdateName}
-              onClose={() => setIsEditingName(false)}
-            />
-          )}
-        </>
+      {/* AFK Unlock Modal */}
+      {showAfkUnlockModal && (
+        <AfkUnlockModal
+          onUnlock={handleUnlockAfk}
+          onClose={() => setShowAfkUnlockModal(false)}
+        />
       )}
     </div>
   );
