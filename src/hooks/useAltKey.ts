@@ -1,17 +1,17 @@
 import { useState, useEffect } from 'react';
 
 export interface PeekComboState {
-  isAltPressed: boolean;
+  isCtrlPressed: boolean;
   isSpacePressed: boolean;
-  isComboActive: boolean; // Alt + Space held down
+  isComboActive: boolean; // Ctrl + Space held down
 }
 
 /**
- * Hook to track whether the physical Alt + Space combination is pressed down.
- * Intercepts Alt + Space to prevent Windows system context menu or page scrolling.
+ * Hook to track whether the physical Ctrl + Space combination is pressed down.
+ * Intercepts Ctrl + Space to prevent browser default actions, IME conflict, or page scrolling.
  */
 export function usePeekCombo(): PeekComboState {
-  const [isAltPressed, setIsAltPressed] = useState<boolean>(false);
+  const [isCtrlPressed, setIsCtrlPressed] = useState<boolean>(false);
   const [isSpacePressed, setIsSpacePressed] = useState<boolean>(false);
 
   useEffect(() => {
@@ -23,13 +23,13 @@ export function usePeekCombo(): PeekComboState {
           target.tagName === 'TEXTAREA' ||
           target.isContentEditable);
 
-      if (e.key === 'Alt' || e.altKey) {
-        setIsAltPressed(true);
+      if (e.key === 'Control' || e.ctrlKey || e.metaKey) {
+        setIsCtrlPressed(true);
       }
 
       if (e.code === 'Space' || e.key === ' ') {
-        // Prevent browser scrolling and Windows system menu when Alt + Space
-        if (e.altKey || isAltPressed) {
+        // Prevent browser scrolling and shortcut conflict when Ctrl + Space
+        if (e.ctrlKey || e.metaKey || isCtrlPressed) {
           e.preventDefault();
         }
         if (!isInput) {
@@ -39,8 +39,8 @@ export function usePeekCombo(): PeekComboState {
     };
 
     const handleKeyUp = (e: KeyboardEvent) => {
-      if (e.key === 'Alt' || !e.altKey) {
-        setIsAltPressed(false);
+      if (e.key === 'Control' || (!e.ctrlKey && !e.metaKey)) {
+        setIsCtrlPressed(false);
       }
       if (e.code === 'Space' || e.key === ' ') {
         setIsSpacePressed(false);
@@ -48,7 +48,7 @@ export function usePeekCombo(): PeekComboState {
     };
 
     const handleBlur = () => {
-      setIsAltPressed(false);
+      setIsCtrlPressed(false);
       setIsSpacePressed(false);
     };
 
@@ -61,12 +61,12 @@ export function usePeekCombo(): PeekComboState {
       window.removeEventListener('keyup', handleKeyUp);
       window.removeEventListener('blur', handleBlur);
     };
-  }, [isAltPressed]);
+  }, [isCtrlPressed]);
 
   return {
-    isAltPressed,
+    isCtrlPressed,
     isSpacePressed,
-    isComboActive: isAltPressed && isSpacePressed,
+    isComboActive: isCtrlPressed && isSpacePressed,
   };
 }
 
@@ -74,6 +74,6 @@ export function usePeekCombo(): PeekComboState {
  * Legacy hook backward compatibility
  */
 export function useAltKey(): boolean {
-  const { isAltPressed } = usePeekCombo();
-  return isAltPressed;
+  const { isComboActive } = usePeekCombo();
+  return isComboActive;
 }

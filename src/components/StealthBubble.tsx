@@ -5,7 +5,7 @@ import { useScrambleDecrypt } from '../hooks/useScrambleDecrypt';
 
 interface StealthBubbleProps {
   message: ChatMessage;
-  isComboActive: boolean; // Alt + Space combination active
+  isComboActive: boolean; // Ctrl + Space combination active
   currentUserName?: string;
   isAfkLocked?: boolean;
 }
@@ -39,7 +39,7 @@ export const StealthBubble: React.FC<StealthBubbleProps> = ({
 
   // Reveal condition:
   // 1. Mobile touch: Tap reveals for 3 seconds with countdown
-  // 2. PC Desktop: Alt + Space + Right-Click held down on the bubble
+  // 2. PC Desktop: Ctrl + Space + Right-Click held down on the bubble
   const isRevealed =
     !isAfkLocked &&
     (isTapActive || (isComboActive && isRightClickDown && isHovered));
