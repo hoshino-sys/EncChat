@@ -58,12 +58,12 @@ export class ChatNetworkService {
       const isHttps = window.location.protocol === 'https:';
       const wsProto = isHttps ? 'wss:' : 'ws:';
       
-      // If running on Vite dev server (port 5173), default relay to 8787
+      // If running on Vite dev server (port 5173), default relay to local 8787
       if (window.location.port === '5173') {
         this.wsUrl = `${wsProto}//${window.location.hostname}:8787/ws`;
       } else {
-        // In Cloudflare deployment or custom domain, route through same origin /ws
-        this.wsUrl = `${wsProto}//${window.location.host}/ws`;
+        // In Cloudflare Pages / custom domain, connect directly to our deployed Cloudflare Worker relay
+        this.wsUrl = 'wss://encchat-relay.19860620884.workers.dev/ws';
       }
     }
 
