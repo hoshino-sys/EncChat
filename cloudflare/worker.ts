@@ -295,9 +295,13 @@ export class ChatRoom {
           case 'message': {
             const msg = data.message;
             if (msg && msg.id) {
+              const enrichedMsg = {
+                ...msg,
+                isRead: Boolean(msg.isRead),
+              };
               // Persist message in SQLite storage
               try {
-                await this.state.storage.put(`msg_${msg.timestamp}_${msg.id}`, msg);
+                await this.state.storage.put(`msg_${msg.timestamp}_${msg.id}`, enrichedMsg);
               } catch (err) {
                 console.error('Failed to save message to SQLite storage:', err);
               }
@@ -305,8 +309,42 @@ export class ChatRoom {
               // Broadcast message to everyone else in the room
               this.broadcast({
                 type: 'message',
-                message: msg
+                message: enrichedMsg
               }, ws);
+            }
+            break;
+          }
+
+          case 'mark_read': {
+            const { messageIds, readerName } = data;
+            if (Array.isArray(messageIds) && messageIds.length > 0) {
+              const updatedIds: string[] = [];
+              const readAt = Date.now();
+              const targetSet = new Set(messageIds);
+
+              try {
+                const historyMap = await this.state.storage.list<any>({ prefix: 'msg_', limit: 500 });
+                for (const [key, storedMsg] of historyMap.entries()) {
+                  if (storedMsg && targetSet.has(storedMsg.id) && !storedMsg.isRead) {
+                    storedMsg.isRead = true;
+                    storedMsg.readAt = readAt;
+                    storedMsg.readBy = readerName;
+                    await this.state.storage.put(key, storedMsg);
+                    updatedIds.push(storedMsg.id);
+                  }
+                }
+              } catch (err) {
+                console.error('Failed to update read status in SQLite:', err);
+              }
+
+              if (updatedIds.length > 0) {
+                this.broadcast({
+                  type: 'messages_read',
+                  messageIds: updatedIds,
+                  readerName,
+                  readAt
+                });
+              }
             }
             break;
           }

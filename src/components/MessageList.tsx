@@ -8,6 +8,7 @@ interface MessageListProps {
   isComboActive: boolean;
   currentUserName?: string;
   isAfkLocked?: boolean;
+  onMarkRead?: (messageId: string) => void;
 }
 
 export const MessageList: React.FC<MessageListProps> = ({
@@ -16,6 +17,7 @@ export const MessageList: React.FC<MessageListProps> = ({
   isComboActive,
   currentUserName,
   isAfkLocked = false,
+  onMarkRead,
 }) => {
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -42,6 +44,7 @@ export const MessageList: React.FC<MessageListProps> = ({
           isComboActive={isComboActive}
           currentUserName={currentUserName}
           isAfkLocked={isAfkLocked}
+          onMarkRead={onMarkRead}
         />
       ))}
 

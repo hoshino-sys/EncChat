@@ -43,7 +43,7 @@ export const App: React.FC = () => {
   const [showAfkUnlockModal, setShowAfkUnlockModal] = useState(false);
   const [showMobileMembers, setShowMobileMembers] = useState(false);
 
-  // Combination peek hook: Alt + Space
+  // Combination peek hook: Ctrl + Space
   const { isComboActive } = usePeekCombo();
 
   const networkRef = useRef<ChatNetworkService | null>(null);
@@ -68,7 +68,11 @@ export const App: React.FC = () => {
         msg.isSelf ||
         (currentSession && (msg.senderName === currentSession.userName || msg.senderId === currentSession.userId))
       );
-      const normalizedMsg = { ...msg, isSelf };
+      const normalizedMsg: ChatMessage = {
+        ...msg,
+        isSelf,
+        isRead: Boolean(msg.isRead),
+      };
 
       if (normalizedMsg.isSelf) {
         return [...prev, normalizedMsg];
@@ -105,20 +109,22 @@ export const App: React.FC = () => {
           msg.isSelf ||
           (currentSession && (msg.senderName === currentSession.userName || msg.senderId === currentSession.userId))
         );
+        const isRead = Boolean(msg.isRead);
+        const readAt = msg.readAt;
 
         if (msg.decryptedText) {
-          return { ...msg, isSelf };
+          return { ...msg, isSelf, isRead, readAt };
         }
 
         if (key && msg.encrypted) {
           try {
             const plaintext = await decryptMessage(msg.encrypted, key);
-            return { ...msg, isSelf, decryptedText: plaintext };
+            return { ...msg, isSelf, isRead, readAt, decryptedText: plaintext };
           } catch {
-            return { ...msg, isSelf, decryptionError: true };
+            return { ...msg, isSelf, isRead, readAt, decryptionError: true };
           }
         }
-        return { ...msg, isSelf };
+        return { ...msg, isSelf, isRead, readAt };
       })
     );
 
@@ -127,6 +133,23 @@ export const App: React.FC = () => {
       const newItems = decryptedList.filter((m) => !existingIds.has(m.id));
       return [...prev, ...newItems].sort((a, b) => a.timestamp - b.timestamp);
     });
+  }, []);
+
+  // Handle read receipts received from other peers or server
+  const handleMessagesRead = useCallback((messageIds: string[], _readerName: string, readAt: number) => {
+    const idSet = new Set(messageIds);
+    setMessages((prev) =>
+      prev.map((m) => (idSet.has(m.id) ? { ...m, isRead: true, readAt: m.readAt || readAt } : m))
+    );
+  }, []);
+
+  // Trigger mark-as-read when local user deciphers/unmasks a message
+  const handleMarkRead = useCallback((messageId: string) => {
+    if (!networkRef.current) return;
+    networkRef.current.markMessagesRead([messageId]);
+    setMessages((prev) =>
+      prev.map((m) => (m.id === messageId ? { ...m, isRead: true, readAt: Date.now() } : m))
+    );
   }, []);
 
   const handlePeersUpdate = useCallback((newPeers: PeerUser[]) => {
@@ -169,6 +192,7 @@ export const App: React.FC = () => {
           onPeersUpdate: handlePeersUpdate,
           onStatusChange: handleStatusChange,
           onSystemNotice: handleSystemNotice,
+          onMessagesRead: handleMessagesRead,
         });
 
         networkRef.current = network;
@@ -187,7 +211,7 @@ export const App: React.FC = () => {
         networkRef.current = null;
       }
     };
-  }, [session, handleIncomingMessage, handleIncomingHistory, handlePeersUpdate, handleStatusChange, handleSystemNotice]);
+  }, [session, handleIncomingMessage, handleIncomingHistory, handleMessagesRead, handlePeersUpdate, handleStatusChange, handleSystemNotice]);
 
   const handleLogin = (newSession: RoomSession) => {
     try {
@@ -224,7 +248,7 @@ export const App: React.FC = () => {
       try {
         localStorage.setItem(AFK_LOCK_KEY, 'true');
       } catch (e) {
-        console.warn('localStorage write failed', e);
+        console.warn('localStorage lock failed', e);
       }
     }
   };
@@ -235,7 +259,7 @@ export const App: React.FC = () => {
     try {
       localStorage.removeItem(AFK_LOCK_KEY);
     } catch (e) {
-      console.warn('localStorage remove failed', e);
+      console.warn('localStorage unlock failed', e);
     }
   };
 
@@ -268,6 +292,15 @@ export const App: React.FC = () => {
   const handleSendMessage = async (text: string) => {
     if (!session || !cryptoKey || !networkRef.current) return;
 
+    // Automatically mark previous incoming unread messages as read upon sending a reply
+    const unreadIncoming = messages.filter((m) => !m.isSelf && !m.isRead).map((m) => m.id);
+    if (unreadIncoming.length > 0 && networkRef.current) {
+      networkRef.current.markMessagesRead(unreadIncoming);
+      setMessages((prev) =>
+        prev.map((m) => (unreadIncoming.includes(m.id) ? { ...m, isRead: true, readAt: Date.now() } : m))
+      );
+    }
+
     try {
       const encrypted = await encryptMessage(text, cryptoKey);
       const charCount = getCharCount(text);
@@ -281,6 +314,7 @@ export const App: React.FC = () => {
         encrypted,
         decryptedText: text,
         isSelf: true,
+        isRead: false,
       };
 
       setMessages((prev) => [...prev, msg]);
@@ -334,6 +368,7 @@ export const App: React.FC = () => {
                   isComboActive={isComboActive}
                   currentUserName={session.userName}
                   isAfkLocked={isAfkLocked}
+                  onMarkRead={handleMarkRead}
                 />
 
                 {/* Input Capsule Area */}

@@ -6,6 +6,7 @@ export interface WebSocketCallbacks {
   onPeersUpdate: (peers: PeerUser[]) => void;
   onStatusChange: (status: ConnectionState) => void;
   onSystemNotice: (text: string) => void;
+  onMessagesRead?: (messageIds: string[], readerName: string, readAt: number) => void;
 }
 
 export class ChatNetworkService {
@@ -197,6 +198,12 @@ export class ChatNetworkService {
         }
         break;
 
+      case 'messages_read':
+        if (Array.isArray(data.messageIds)) {
+          this.callbacks.onMessagesRead?.(data.messageIds, data.readerName, data.readAt || Date.now());
+        }
+        break;
+
       case 'pong':
         // Heartbeat received
         break;
@@ -204,6 +211,32 @@ export class ChatNetworkService {
       case 'auth_error':
         this.callbacks.onSystemNotice(`身份校验未过: ${data.error || '未授权'}`);
         break;
+    }
+  }
+
+  public markMessagesRead(messageIds: string[]) {
+    if (!messageIds || messageIds.length === 0) return;
+    const packet = {
+      type: 'mark_read',
+      roomId: this.roomId,
+      messageIds,
+      readerName: this.userName,
+      timestamp: Date.now(),
+    };
+
+    this.sendRaw(packet);
+
+    if (this.broadcastChannel) {
+      try {
+        this.broadcastChannel.postMessage({
+          type: 'messages_read',
+          messageIds,
+          readerName: this.userName,
+          readAt: Date.now(),
+        });
+      } catch (e) {
+        console.warn('BroadcastChannel mark_read error:', e);
+      }
     }
   }
 

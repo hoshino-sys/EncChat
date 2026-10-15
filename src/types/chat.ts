@@ -14,6 +14,9 @@ export interface ChatMessage {
   decryptedText?: string; // Decrypted plaintext cached in memory on client
   decryptionError?: boolean;
   isSelf?: boolean;
+  isRead?: boolean;
+  readAt?: number;
+  readBy?: string;
 }
 
 export type UserRole = 'admin' | 'user';

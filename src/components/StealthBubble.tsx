@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { Check, CheckCheck } from 'lucide-react';
 import { ChatMessage } from '../types/chat';
 import { generateMaskedRunes, getCharCount } from '../utils/maskCipher';
 import { useScrambleDecrypt } from '../hooks/useScrambleDecrypt';
@@ -8,6 +9,7 @@ interface StealthBubbleProps {
   isComboActive: boolean; // Ctrl + Space combination active
   currentUserName?: string;
   isAfkLocked?: boolean;
+  onMarkRead?: (messageId: string) => void;
 }
 
 export const StealthBubble: React.FC<StealthBubbleProps> = ({
@@ -15,6 +17,7 @@ export const StealthBubble: React.FC<StealthBubbleProps> = ({
   isComboActive,
   currentUserName,
   isAfkLocked = false,
+  onMarkRead,
 }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [isTapActive, setIsTapActive] = useState(false);
@@ -43,6 +46,20 @@ export const StealthBubble: React.FC<StealthBubbleProps> = ({
   const isRevealed =
     !isAfkLocked &&
     (isTapActive || (isComboActive && isRightClickDown && isHovered));
+
+  // Determine whether message is sent by current user across all devices/sessions
+  const isSelf = Boolean(
+    message.isSelf ||
+    (currentUserName && message.senderName === currentUserName)
+  );
+  const isYeXing = message.senderName === '夜星';
+
+  // Mark message as read when recipient deciphers/reveals it
+  useEffect(() => {
+    if (isRevealed && !isSelf && !message.isRead && onMarkRead) {
+      onMarkRead(message.id);
+    }
+  }, [isRevealed, isSelf, message.isRead, message.id, onMarkRead]);
 
   // Format time (HH:mm) with lining numbers
   const timeString = useMemo(() => {
@@ -114,20 +131,13 @@ export const StealthBubble: React.FC<StealthBubbleProps> = ({
     setIsRightClickDown(false);
   };
 
-  // Determine whether message is sent by current user across all devices/sessions
-  const isSelf = Boolean(
-    message.isSelf ||
-    (currentUserName && message.senderName === currentUserName)
-  );
-  const isYeXing = message.senderName === '夜星';
-
   return (
     <div
       className={`group flex flex-col mb-4 transition-all duration-300 select-none ${
         isSelf ? 'items-end' : 'items-start'
       }`}
     >
-      {/* Sender info & time */}
+      {/* Sender info, time & Read/Unread status */}
       <div className="flex items-center gap-2 px-1.5 mb-1.5 text-[11px] font-serif tracking-wider">
         <div className="flex items-center gap-1.5">
           {/* 夜星 = 金色文字; 小夜星 = 红色文字 */}
@@ -148,9 +158,45 @@ export const StealthBubble: React.FC<StealthBubbleProps> = ({
             {isYeXing ? '管理员' : '用户'}
           </span>
         </div>
+
         <span className="opacity-45 text-[10px] font-mono lining-nums tabular-nums text-[#a4a9b6]">
           {timeString}
         </span>
+
+        {/* Sender: Show Read / Unread status */}
+        {isSelf && (
+          <span
+            className={`inline-flex items-center gap-0.5 text-[10px] font-serif tracking-wider transition-colors duration-200 ${
+              message.isRead
+                ? 'text-[#6dbb89] opacity-95 font-medium'
+                : 'text-[#d6a75d] opacity-85'
+            }`}
+            title={message.isRead ? '对方已解印查阅' : '对方尚未查阅'}
+          >
+            {message.isRead ? (
+              <>
+                <CheckCheck className="w-3 h-3 text-[#6dbb89]" strokeWidth={2.2} />
+                <span>已读</span>
+              </>
+            ) : (
+              <>
+                <Check className="w-2.5 h-2.5 text-[#d6a75d]" strokeWidth={2} />
+                <span>未读</span>
+              </>
+            )}
+          </span>
+        )}
+
+        {/* Recipient: Show unviewed badge if message hasn't been deciphered yet */}
+        {!isSelf && !message.isRead && (
+          <span
+            className="inline-flex items-center gap-1 text-[9px] font-serif text-[#e05353] bg-[#e05353]/15 border border-[#e05353]/30 px-1.5 py-0.2 rounded font-medium shadow-[0_1px_6px_rgba(224,83,83,0.2)] animate-pulse"
+            title="尚未解密查阅"
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-[#e05353]" />
+            <span>未阅</span>
+          </span>
+        )}
       </div>
 
       {/* White Frosted Glass Bubble (白透毛玻璃) */}
