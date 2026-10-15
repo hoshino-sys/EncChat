@@ -302,6 +302,18 @@ export class ChatRoom {
               // Persist message in SQLite storage
               try {
                 await this.state.storage.put(`msg_${msg.timestamp}_${msg.id}`, enrichedMsg);
+
+                // Periodic eviction: keep DO storage lightweight (<= 500 messages)
+                if (Math.random() < 0.1) {
+                  const allKeys = await this.state.storage.list({ prefix: 'msg_', limit: 600 });
+                  if (allKeys.size > 500) {
+                    const sortedKeys = Array.from(allKeys.keys()).sort();
+                    const toDelete = sortedKeys.slice(0, sortedKeys.length - 450);
+                    for (const k of toDelete) {
+                      await this.state.storage.delete(k);
+                    }
+                  }
+                }
               } catch (err) {
                 console.error('Failed to save message to SQLite storage:', err);
               }

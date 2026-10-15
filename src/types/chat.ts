@@ -3,15 +3,34 @@ export interface EncryptedPayload {
   ciphertext: string; // Base64 encoded ciphertext
 }
 
+export type MessageType = 'text' | 'image';
+
+export interface ImageMeta {
+  width: number;
+  height: number;
+  aspectRatio: number;
+  size?: number; // compressed byte size
+}
+
+export interface DecryptedImagePayload {
+  width: number;
+  height: number;
+  data: string; // data:image/webp;base64,...
+  size?: number;
+}
+
 export interface ChatMessage {
   id: string;
   roomId: string;
   senderId: string;
   senderName: string;
   timestamp: number;
+  msgType?: MessageType;
+  imageMeta?: ImageMeta;
   charCount?: number; // Exact character count for 1:1 masked rune rendering
   encrypted: EncryptedPayload;
   decryptedText?: string; // Decrypted plaintext cached in memory on client
+  decryptedImage?: DecryptedImagePayload; // Decrypted image data cached in memory
   decryptionError?: boolean;
   isSelf?: boolean;
   isRead?: boolean;

@@ -49,7 +49,7 @@ class NotificationService {
     }
   }
 
-  public async notifyNewMessage(senderName: string, isSelf: boolean) {
+  public async notifyNewMessage(senderName: string, isSelf: boolean, isImage: boolean = false) {
     if (isSelf) return;
 
     // Only notify if document is hidden or window is not in focus (user is in background or another app)
@@ -59,7 +59,9 @@ class NotificationService {
     }
 
     const title = '墨隐';
-    const body = `收到来自【${senderName}】的新印函`;
+    const body = isImage
+      ? `收到来自【${senderName}】的新印函 [图印]`
+      : `收到来自【${senderName}】的新印函`;
 
     if (isCapacitorNative()) {
       try {

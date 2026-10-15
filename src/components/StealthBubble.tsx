@@ -1,8 +1,9 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { Check, CheckCheck } from 'lucide-react';
-import { ChatMessage } from '../types/chat';
+import { Check, CheckCheck, ImageIcon, Lock, Maximize2 } from 'lucide-react';
+import { ChatMessage, DecryptedImagePayload } from '../types/chat';
 import { generateMaskedRunes, getCharCount } from '../utils/maskCipher';
 import { useScrambleDecrypt } from '../hooks/useScrambleDecrypt';
+import { formatByteSize } from '../utils/imageCompressor';
 
 interface StealthBubbleProps {
   message: ChatMessage;
@@ -10,6 +11,7 @@ interface StealthBubbleProps {
   currentUserName?: string;
   isAfkLocked?: boolean;
   onMarkRead?: (messageId: string) => void;
+  onPreviewImage?: (image: DecryptedImagePayload, senderName: string, timestamp: number) => void;
 }
 
 export const StealthBubble: React.FC<StealthBubbleProps> = ({
@@ -18,6 +20,7 @@ export const StealthBubble: React.FC<StealthBubbleProps> = ({
   currentUserName,
   isAfkLocked = false,
   onMarkRead,
+  onPreviewImage,
 }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [isTapActive, setIsTapActive] = useState(false);
@@ -199,7 +202,7 @@ export const StealthBubble: React.FC<StealthBubbleProps> = ({
         )}
       </div>
 
-      {/* White Frosted Glass Bubble (白透毛玻璃) */}
+      {/* White Frosted Glass Bubble or Image Tile */}
       <div
         onPointerUp={handlePointerUp}
         onMouseEnter={() => setIsHovered(true)}
@@ -207,36 +210,130 @@ export const StealthBubble: React.FC<StealthBubbleProps> = ({
         onMouseDown={handleMouseDown}
         onMouseUp={handleMouseUp}
         onContextMenu={(e) => e.preventDefault()}
-        className={`relative max-w-[85%] md:max-w-[72%] rounded-2xl px-4 py-3 transition-all duration-200 overflow-hidden ${
-          isRevealed
-            ? 'white-glass-bubble-revealed shadow-[0_8px_32px_rgba(255,255,255,0.08)] scale-[1.01] animate-decipher-glow'
-            : isSelf
-            ? 'white-glass-bubble hover:border-white/30 hover:bg-white/[0.11]'
-            : 'white-glass-bubble hover:border-white/30 hover:bg-white/[0.11]'
+        className={`relative transition-all duration-200 overflow-hidden ${
+          message.msgType === 'image'
+            ? 'rounded-2xl border border-stone-800/80 bg-[#0c0e12]/90 shadow-lg'
+            : `max-w-[85%] md:max-w-[72%] rounded-2xl px-4 py-3 ${
+                isRevealed
+                  ? 'white-glass-bubble-revealed shadow-[0_8px_32px_rgba(255,255,255,0.08)] scale-[1.01] animate-decipher-glow'
+                  : 'white-glass-bubble hover:border-white/30 hover:bg-white/[0.11]'
+              }`
         }`}
       >
-        {isRevealed ? (
-          /* Decrypted Plaintext with Scramble Transition */
-          <div className="animate-fade-in">
-            {message.decryptionError ? (
-              <span className="text-slate-400 text-xs font-serif tracking-widest">[解印有误]</span>
+        {message.msgType === 'image' ? (
+          /* Image Message Branch */
+          <div className="relative">
+            {isRevealed ? (
+              /* Decrypted Image */
+              <div className="animate-fade-in relative group/img">
+                {message.decryptionError ? (
+                  <div className="px-6 py-8 text-center text-stone-400 text-xs font-serif tracking-widest bg-stone-900/60 rounded-xl">
+                    [图函解印有误]
+                  </div>
+                ) : message.decryptedImage ? (
+                  <div
+                    className="cursor-pointer relative overflow-hidden rounded-xl max-w-[280px] sm:max-w-[340px]"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (onPreviewImage && message.decryptedImage) {
+                        onPreviewImage(message.decryptedImage, message.senderName, message.timestamp);
+                      }
+                    }}
+                  >
+                    <img
+                      src={message.decryptedImage.data}
+                      alt="密函图印"
+                      className="w-full h-auto object-cover rounded-xl border border-stone-700/50 hover:scale-[1.02] transition-transform duration-300"
+                      draggable={false}
+                    />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                      <div className="flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-black/70 text-stone-200 text-xs font-serif shadow-lg border border-white/20">
+                        <Maximize2 className="w-3.5 h-3.5" />
+                        <span>全屏放大</span>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="w-[220px] h-[160px] flex items-center justify-center bg-stone-900/60 rounded-xl text-stone-400 text-xs font-serif animate-pulse">
+                    正在解印图函...
+                  </div>
+                )}
+              </div>
             ) : (
-              <div className="whitespace-pre-wrap break-words text-[14px] md:text-[15px] leading-relaxed font-serif text-[#ffffff] tracking-wide select-text">
-                {scrambleText}
+              /* Sealed Ancient Image Tile (密印图砖) */
+              <div
+                className={`w-[220px] sm:w-[260px] p-4 flex flex-col items-center justify-center select-none rounded-xl bg-gradient-to-br from-[#14161c] via-[#0b0d11] to-[#1a1417] border border-[#a83232]/35 shadow-[inset_0_0_20px_rgba(168,50,50,0.08)] cursor-pointer transition-transform duration-200 ${
+                  isHovered ? 'scale-[1.01] border-[#a83232]/60' : ''
+                }`}
+                style={{
+                  aspectRatio: message.imageMeta?.aspectRatio
+                    ? Math.max(0.7, Math.min(message.imageMeta.aspectRatio, 1.8))
+                    : 1.33,
+                  maxHeight: '260px',
+                  minHeight: '130px',
+                }}
+              >
+                {/* Corner ancient brackets */}
+                <div className="absolute top-2 left-2 text-[#a83232]/40 text-xs font-mono">⌜</div>
+                <div className="absolute top-2 right-2 text-[#a83232]/40 text-xs font-mono">⌝</div>
+                <div className="absolute bottom-2 left-2 text-[#a83232]/40 text-xs font-mono">⌞</div>
+                <div className="absolute bottom-2 right-2 text-[#a83232]/40 text-xs font-mono">⌟</div>
+
+                <div className="relative mb-2">
+                  <div className="w-12 h-12 rounded-full bg-[#a83232]/10 border border-[#a83232]/40 flex items-center justify-center shadow-[0_0_12px_rgba(168,50,50,0.25)]">
+                    <ImageIcon className="w-6 h-6 text-[#d6a75d] opacity-90" />
+                  </div>
+                  <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-[#0d0f12] border border-[#a83232]/60 flex items-center justify-center">
+                    <Lock className="w-2.5 h-2.5 text-[#e05353]" />
+                  </div>
+                </div>
+
+                <span className="font-serif text-[13px] text-stone-200 tracking-wider font-medium">
+                  密印图函
+                </span>
+
+                <div className="flex items-center gap-1.5 mt-1 text-[10px] font-mono text-stone-500">
+                  {message.imageMeta?.width && message.imageMeta?.height && (
+                    <span>{message.imageMeta.width}×{message.imageMeta.height}</span>
+                  )}
+                  {message.imageMeta?.size && (
+                    <span>· {formatByteSize(message.imageMeta.size)}</span>
+                  )}
+                </div>
+
+                <span className="mt-2 text-[10px] font-serif text-[#c45353] opacity-80 tracking-widest animate-pulse">
+                  触碰解印 · 谨防窥探
+                </span>
               </div>
             )}
           </div>
         ) : (
-          /* 1-to-1 Esoteric Rune Glyphs Mask */
-          <div className="py-0.5 overflow-hidden">
-            <span
-              className={`font-serif text-[14px] md:text-[15px] tracking-[0.25em] select-none block transition-opacity duration-200 ${
-                isAfkLocked ? 'text-[#505562] opacity-70' : 'text-[#a3abb8] opacity-85'
-              }`}
-            >
-              {scrambleText}
-            </span>
-          </div>
+          /* Text Message Branch */
+          <>
+            {isRevealed ? (
+              /* Decrypted Plaintext with Scramble Transition */
+              <div className="animate-fade-in">
+                {message.decryptionError ? (
+                  <span className="text-slate-400 text-xs font-serif tracking-widest">[解印有误]</span>
+                ) : (
+                  <div className="whitespace-pre-wrap break-words text-[14px] md:text-[15px] leading-relaxed font-serif text-[#ffffff] tracking-wide select-text">
+                    {scrambleText}
+                  </div>
+                )}
+              </div>
+            ) : (
+              /* 1-to-1 Esoteric Rune Glyphs Mask */
+              <div className="py-0.5 overflow-hidden">
+                <span
+                  className={`font-serif text-[14px] md:text-[15px] tracking-[0.25em] select-none block transition-opacity duration-200 ${
+                    isAfkLocked ? 'text-[#505562] opacity-70' : 'text-[#a3abb8] opacity-85'
+                  }`}
+                >
+                  {scrambleText}
+                </span>
+              </div>
+            )}
+          </>
         )}
 
         {/* 3-Second Countdown Progress Hairline (流光倒计时细线 - 仅移动端生效) */}

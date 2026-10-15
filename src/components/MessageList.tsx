@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { ChatMessage } from '../types/chat';
+import { ChatMessage, DecryptedImagePayload } from '../types/chat';
 import { StealthBubble } from './StealthBubble';
 
 interface MessageListProps {
@@ -9,6 +9,7 @@ interface MessageListProps {
   currentUserName?: string;
   isAfkLocked?: boolean;
   onMarkRead?: (messageId: string) => void;
+  onPreviewImage?: (image: DecryptedImagePayload, senderName: string, timestamp: number) => void;
 }
 
 export const MessageList: React.FC<MessageListProps> = ({
@@ -18,6 +19,7 @@ export const MessageList: React.FC<MessageListProps> = ({
   currentUserName,
   isAfkLocked = false,
   onMarkRead,
+  onPreviewImage,
 }) => {
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -45,6 +47,7 @@ export const MessageList: React.FC<MessageListProps> = ({
           currentUserName={currentUserName}
           isAfkLocked={isAfkLocked}
           onMarkRead={onMarkRead}
+          onPreviewImage={onPreviewImage}
         />
       ))}
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { ChatMessage, RoomSession, ConnectionState, PeerUser } from './types/chat';
+import { ChatMessage, RoomSession, ConnectionState, PeerUser, DecryptedImagePayload } from './types/chat';
 import { deriveKey, encryptMessage, decryptMessage } from './services/crypto';
 import { ChatNetworkService } from './services/websocket';
 import { usePeekCombo } from './hooks/useAltKey';
@@ -10,12 +10,39 @@ import { LoginModal } from './components/LoginModal';
 import { MemberListCard } from './components/MemberListCard';
 import { MobileMemberModal } from './components/MobileMemberModal';
 import { AfkUnlockModal } from './components/AfkUnlockModal';
+import { ImageLightboxModal } from './components/ImageLightboxModal';
+import { compressImage } from './utils/imageCompressor';
 import { getCharCount } from './utils/maskCipher';
 import { notificationService } from './services/notification';
 
 const STORAGE_KEY = 'encchat_user_session_v2';
 const AFK_LOCK_KEY = 'encchat_afk_locked_v2';
 const MESSAGE_CACHE_PREFIX = 'encchat_cached_messages_v1_';
+
+async function decryptMsgPayload(msg: ChatMessage, key: CryptoKey): Promise<Partial<ChatMessage>> {
+  try {
+    const raw = await decryptMessage(msg.encrypted, key);
+    if (msg.msgType === 'image') {
+      try {
+        const parsed = JSON.parse(raw);
+        return {
+          decryptedImage: {
+            width: parsed.width,
+            height: parsed.height,
+            data: parsed.data,
+            size: parsed.size,
+          },
+        };
+      } catch {
+        return { decryptionError: true };
+      }
+    } else {
+      return { decryptedText: raw };
+    }
+  } catch {
+    return { decryptionError: true };
+  }
+}
 
 export const App: React.FC = () => {
   const [session, setSession] = useState<RoomSession | null>(() => {
@@ -63,6 +90,11 @@ export const App: React.FC = () => {
 
   const [showAfkUnlockModal, setShowAfkUnlockModal] = useState(false);
   const [showMobileMembers, setShowMobileMembers] = useState(false);
+  const [previewImage, setPreviewImage] = useState<{
+    image: DecryptedImagePayload;
+    senderName: string;
+    timestamp: number;
+  } | null>(null);
 
   // Combination peek hook: Ctrl + Space
   const { isComboActive } = usePeekCombo();
@@ -84,11 +116,20 @@ export const App: React.FC = () => {
     notificationService.init();
   }, []);
 
-  // Save messages to local cache whenever messages change (keeps up to 200 messages with decryptedText)
+  // Save messages to local cache whenever messages change
+  // For image messages, keep metadata but omit huge base64 strings so localStorage quota is never exceeded
   useEffect(() => {
     if (session?.roomId && messages.length > 0) {
       try {
-        const toCache = messages.slice(-200);
+        const toCache = messages.slice(-100).map((m) => {
+          if (m.msgType === 'image') {
+            return {
+              ...m,
+              decryptedImage: undefined,
+            };
+          }
+          return m;
+        });
         localStorage.setItem(MESSAGE_CACHE_PREFIX + session.roomId, JSON.stringify(toCache));
       } catch (e) {
         console.warn('Failed to save message cache:', e);
@@ -105,7 +146,7 @@ export const App: React.FC = () => {
     );
 
     // Trigger background notification if user is not in app
-    notificationService.notifyNewMessage(msg.senderName, isSelf);
+    notificationService.notifyNewMessage(msg.senderName, isSelf, msg.msgType === 'image');
 
     setMessages((prev) => {
       if (prev.some((m) => m.id === msg.id)) return prev;
@@ -122,18 +163,11 @@ export const App: React.FC = () => {
 
       const key = cryptoKeyRef.current;
       if (key) {
-        decryptMessage(normalizedMsg.encrypted, key)
-          .then((plaintext) => {
-            setMessages((current) =>
-              current.map((m) => (m.id === normalizedMsg.id ? { ...m, decryptedText: plaintext } : m))
-            );
-          })
-          .catch((err) => {
-            console.warn('Decryption failed for message:', normalizedMsg.id, err);
-            setMessages((current) =>
-              current.map((m) => (m.id === normalizedMsg.id ? { ...m, decryptionError: true } : m))
-            );
-          });
+        decryptMsgPayload(normalizedMsg, key).then((decryptedData) => {
+          setMessages((current) =>
+            current.map((m) => (m.id === normalizedMsg.id ? { ...m, ...decryptedData } : m))
+          );
+        });
       }
 
       return [...prev, normalizedMsg];
@@ -159,16 +193,18 @@ export const App: React.FC = () => {
         const readAt = serverMsg.readAt;
 
         if (existing) {
-          // Already in local cache! Keep cached decryptedText to avoid lag
+          // Already in local cache! Keep cached decryptedText or decryptedImage to avoid lag
           const updated: ChatMessage = {
             ...existing,
             isSelf,
             isRead: isRead || existing.isRead,
             readAt: readAt || existing.readAt,
             decryptedText: existing.decryptedText || serverMsg.decryptedText,
+            decryptedImage: existing.decryptedImage || serverMsg.decryptedImage,
           };
           prevMap.set(serverMsg.id, updated);
-          if (!updated.decryptedText && key && updated.encrypted && !updated.isSelf) {
+          const needsDecrypt = !updated.decryptedText && !updated.decryptedImage && !updated.isSelf && updated.encrypted;
+          if (needsDecrypt && key) {
             toDecrypt.push(updated);
           }
         } else {
@@ -180,9 +216,8 @@ export const App: React.FC = () => {
             readAt,
           };
           prevMap.set(serverMsg.id, newMsg);
-          if (newMsg.decryptedText) {
-            // Already has plaintext
-          } else if (key && newMsg.encrypted && !newMsg.isSelf) {
+          const needsDecrypt = !newMsg.decryptedText && !newMsg.decryptedImage && !newMsg.isSelf && newMsg.encrypted;
+          if (needsDecrypt && key) {
             toDecrypt.push(newMsg);
           }
         }
@@ -191,19 +226,15 @@ export const App: React.FC = () => {
       if (toDecrypt.length > 0 && key) {
         Promise.all(
           toDecrypt.map(async (msg) => {
-            try {
-              const text = await decryptMessage(msg.encrypted, key);
-              return { id: msg.id, text };
-            } catch {
-              return { id: msg.id, error: true };
-            }
+            const dec = await decryptMsgPayload(msg, key);
+            return { id: msg.id, ...dec };
           })
         ).then((results) => {
           setMessages((cur) =>
             cur.map((m) => {
               const found = results.find((r) => r.id === m.id);
               if (found) {
-                return found.text ? { ...m, decryptedText: found.text } : { ...m, decryptionError: true };
+                return { ...m, ...found };
               }
               return m;
             })
@@ -226,24 +257,22 @@ export const App: React.FC = () => {
   // Proactive self-healing: automatically decrypt any messages that arrived before cryptoKey was ready
   useEffect(() => {
     if (!cryptoKey || messages.length === 0) return;
-    const pendingDecrypt = messages.filter((m) => !m.isSelf && !m.decryptedText && m.encrypted);
+    const pendingDecrypt = messages.filter(
+      (m) => !m.isSelf && !m.decryptedText && !m.decryptedImage && m.encrypted && !m.decryptionError
+    );
     if (pendingDecrypt.length === 0) return;
 
     Promise.all(
       pendingDecrypt.map(async (m) => {
-        try {
-          const text = await decryptMessage(m.encrypted, cryptoKey);
-          return { id: m.id, text };
-        } catch {
-          return { id: m.id, error: true };
-        }
+        const dec = await decryptMsgPayload(m, cryptoKey);
+        return { id: m.id, ...dec };
       })
     ).then((results) => {
       setMessages((cur) =>
         cur.map((m) => {
           const found = results.find((r) => r.id === m.id);
           if (found) {
-            return found.text ? { ...m, decryptedText: found.text } : { ...m, decryptionError: true };
+            return { ...m, ...found };
           }
           return m;
         })
@@ -433,6 +462,60 @@ export const App: React.FC = () => {
     }
   };
 
+  const handleSendImage = async (file: File) => {
+    if (!session || !cryptoKey || !networkRef.current) return;
+
+    // Automatically mark previous incoming unread messages as read upon sending a reply
+    const unreadIncoming = messages.filter((m) => !m.isSelf && !m.isRead).map((m) => m.id);
+    if (unreadIncoming.length > 0 && networkRef.current) {
+      networkRef.current.markMessagesRead(unreadIncoming);
+      setMessages((prev) =>
+        prev.map((m) => (unreadIncoming.includes(m.id) ? { ...m, isRead: true, readAt: Date.now() } : m))
+      );
+    }
+
+    try {
+      const compressed = await compressImage(file);
+      const imagePayloadJson = JSON.stringify({
+        type: 'image',
+        width: compressed.width,
+        height: compressed.height,
+        data: compressed.dataUrl,
+        size: compressed.size,
+      });
+
+      const encrypted = await encryptMessage(imagePayloadJson, cryptoKey);
+      const msg: ChatMessage = {
+        id: `img_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
+        roomId: session.roomId,
+        senderId: session.userId,
+        senderName: session.userName,
+        timestamp: Date.now(),
+        msgType: 'image',
+        imageMeta: {
+          width: compressed.width,
+          height: compressed.height,
+          aspectRatio: compressed.aspectRatio,
+          size: compressed.size,
+        },
+        encrypted,
+        decryptedImage: {
+          width: compressed.width,
+          height: compressed.height,
+          data: compressed.dataUrl,
+          size: compressed.size,
+        },
+        isSelf: true,
+        isRead: false,
+      };
+
+      setMessages((prev) => [...prev, msg]);
+      networkRef.current.sendMessage(msg);
+    } catch (err) {
+      console.error('Failed to send image:', err);
+    }
+  };
+
   return (
     <div className="flex flex-col h-[100dvh] w-full ink-bg text-[#ece8df] overflow-hidden select-none font-serif">
       {/* Login Modal */}
@@ -478,11 +561,18 @@ export const App: React.FC = () => {
                   currentUserName={session.userName}
                   isAfkLocked={isAfkLocked}
                   onMarkRead={handleMarkRead}
+                  onPreviewImage={(img, sender, ts) =>
+                    setPreviewImage({ image: img, senderName: sender, timestamp: ts })
+                  }
                 />
 
                 {/* Input Capsule Area */}
                 <div className="shrink-0 px-4 md:px-6 py-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
-                  <StealthInput onSendMessage={handleSendMessage} disabled={!cryptoKey} />
+                  <StealthInput
+                    onSendMessage={handleSendMessage}
+                    onSendImage={handleSendImage}
+                    disabled={!cryptoKey}
+                  />
                 </div>
               </main>
             </div>
@@ -507,6 +597,16 @@ export const App: React.FC = () => {
         <AfkUnlockModal
           onUnlock={handleUnlockAfk}
           onClose={() => setShowAfkUnlockModal(false)}
+        />
+      )}
+
+      {/* Image Lightbox Modal */}
+      {previewImage && (
+        <ImageLightboxModal
+          image={previewImage.image}
+          senderName={previewImage.senderName}
+          timestamp={previewImage.timestamp}
+          onClose={() => setPreviewImage(null)}
         />
       )}
     </div>
