@@ -22,6 +22,7 @@
   "dependencies": {
     "@capacitor/android": "^8.5.3",
     "@capacitor/core": "^8.5.3",
+    "@capacitor/local-notifications": "^8.3.1",
     "clsx": "^2.1.1",
     "js-sha256": "^1.0.0",
     "lucide-react": "^1.57.0",

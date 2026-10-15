@@ -193,7 +193,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onLogin, savedSession })
   const isFirstTime = hasPasswordSet === false;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pt-[calc(env(safe-area-inset-top,0px)+1rem)] pb-[calc(env(safe-area-inset-bottom,0px)+1rem)] bg-black/80 backdrop-blur-2xl">
       <div className="w-full max-w-sm rounded-3xl white-glass border border-white/20 shadow-[0_24px_70px_rgba(0,0,0,0.85)] overflow-hidden p-6 md:p-8 animate-fade-in select-none">
         {/* Brand Header */}
         <div className="flex flex-col items-center text-center pb-6 border-b border-white/10">

@@ -37,7 +37,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
   const isAdmin = userName === '夜星' || userRole === 'admin';
 
   return (
-    <header className="w-full shrink-0 px-3 sm:px-6 py-2.5 white-glass border-b border-white/10 flex items-center justify-between select-none z-20">
+    <header className="w-full shrink-0 px-3 sm:px-6 pt-[calc(env(safe-area-inset-top,0px)+0.625rem)] pb-2.5 white-glass border-b border-white/10 flex items-center justify-between select-none z-20">
       {/* Left: Brand, Room & Members Trigger */}
       <div className="flex items-center gap-2 sm:gap-3">
         {/* Brand Seal */}

@@ -11,42 +11,65 @@ $densities = @{
 }
 
 $charMo = [string][char]0x58a8
+$cinnabarRed = [System.Drawing.ColorTranslator]::FromHtml("#a83232")
 
-function Generate-Icon($size, $isRound, $outPath) {
-    $bmp = New-Object System.Drawing.Bitmap $size, $size
+# 1. Generate Legacy Full-Bleed Icons (Zero black edges)
+function Generate-Legacy-Icon($size, $isRound, $outPath) {
+    $bmp = [System.Drawing.Bitmap]::new($size, $size)
     $g = [System.Drawing.Graphics]::FromImage($bmp)
     $g.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::AntiAlias
     $g.TextRenderingHint = [System.Drawing.Text.TextRenderingHint]::AntiAliasGridFit
     $g.Clear([System.Drawing.Color]::Transparent)
 
-    $pad = [Math]::Max(2, [int]($size * 0.08))
-    $rectSize = $size - ($pad * 2)
-    $sealColor = [System.Drawing.ColorTranslator]::FromHtml("#ab3838")
-    $sealBrush = New-Object System.Drawing.SolidBrush $sealColor
+    $sealBrush = [System.Drawing.SolidBrush]::new($cinnabarRed)
+    $path = [System.Drawing.Drawing2D.GraphicsPath]::new()
 
-    $path = New-Object System.Drawing.Drawing2D.GraphicsPath
     if ($isRound) {
-        $path.AddEllipse($pad, $pad, $rectSize, $rectSize)
+        # Full-bleed circle (0 empty padding)
+        $path.AddEllipse(0, 0, $size, $size)
+        $g.FillPath($sealBrush, $path)
+
+        # Fine inner circular border
+        $innerPad = [int]($size * 0.08)
+        $innerSize = $size - ($innerPad * 2)
+        $borderPen = [System.Drawing.Pen]::new([System.Drawing.Color]::FromArgb(210, 255, 255, 255), [float]([Math]::Max(1.5, ($size * 0.025))))
+        $g.DrawEllipse($borderPen, [float]$innerPad, [float]$innerPad, [float]$innerSize, [float]$innerSize)
+        $borderPen.Dispose()
     } else {
-        $radius = [int]($rectSize * 0.22)
-        $path.AddArc($pad, $pad, $radius, $radius, 180, 90)
-        $path.AddArc($pad + $rectSize - $radius, $pad, $radius, $radius, 270, 90)
-        $path.AddArc($pad + $rectSize - $radius, $pad + $rectSize - $radius, $radius, $radius, 0, 90)
-        $path.AddArc($pad, $pad + $rectSize - $radius, $radius, $radius, 90, 90)
+        # Full-bleed rounded rectangle
+        $radius = [int]($size * 0.22)
+        $path.AddArc(0, 0, $radius, $radius, 180, 90)
+        $path.AddArc($size - $radius, 0, $radius, $radius, 270, 90)
+        $path.AddArc($size - $radius, $size - $radius, $radius, $radius, 0, 90)
+        $path.AddArc(0, $size - $radius, $radius, $radius, 90, 90)
         $path.CloseFigure()
+        $g.FillPath($sealBrush, $path)
+
+        # Fine inner seal border
+        $innerPad = [int]($size * 0.08)
+        $innerSize = $size - ($innerPad * 2)
+        $innerRadius = [int]($innerSize * 0.18)
+        $innerPath = [System.Drawing.Drawing2D.GraphicsPath]::new()
+        $innerPath.AddArc($innerPad, $innerPad, $innerRadius, $innerRadius, 180, 90)
+        $innerPath.AddArc($innerPad + $innerSize - $innerRadius, $innerPad, $innerRadius, $innerRadius, 270, 90)
+        $innerPath.AddArc($innerPad + $innerSize - $innerRadius, $innerPad + $innerSize - $innerRadius, $innerRadius, $innerRadius, 0, 90)
+        $innerPath.AddArc($innerPad, $innerPad + $innerSize - $innerRadius, $innerRadius, $innerRadius, 90, 90)
+        $innerPath.CloseFigure()
+        $borderPen = [System.Drawing.Pen]::new([System.Drawing.Color]::FromArgb(210, 255, 255, 255), [float]([Math]::Max(1.5, ($size * 0.025))))
+        $g.DrawPath($borderPen, $innerPath)
+        $borderPen.Dispose()
+        $innerPath.Dispose()
     }
 
-    $g.FillPath($sealBrush, $path)
-
-    # Draw Chinese character '墨'
-    $fontSize = [float]($rectSize * 0.55)
-    $font = New-Object System.Drawing.Font('SimSun', $fontSize, [System.Drawing.FontStyle]::Bold)
-    $textBrush = New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::White)
-    $sf = New-Object System.Drawing.StringFormat
+    # Draw Chinese character '墨' in white
+    $fontSize = [float]($size * 0.52)
+    $font = [System.Drawing.Font]::new('SimSun', $fontSize, [System.Drawing.FontStyle]::Bold)
+    $textBrush = [System.Drawing.SolidBrush]::new([System.Drawing.Color]::White)
+    $sf = [System.Drawing.StringFormat]::new()
     $sf.Alignment = [System.Drawing.StringAlignment]::Center
     $sf.LineAlignment = [System.Drawing.StringAlignment]::Center
 
-    $textRect = New-Object System.Drawing.RectangleF $pad, ($pad + [int]($rectSize * 0.02)), $rectSize, $rectSize
+    $textRect = [System.Drawing.RectangleF]::new(0, [float]($size * 0.02), [float]$size, [float]$size)
     $g.DrawString($charMo, $font, $textBrush, $textRect, $sf)
 
     $bmp.Save($outPath, [System.Drawing.Imaging.ImageFormat]::Png)
@@ -55,78 +78,96 @@ function Generate-Icon($size, $isRound, $outPath) {
     $font.Dispose()
     $sealBrush.Dispose()
     $path.Dispose()
+    $sf.Dispose()
     $g.Dispose()
     $bmp.Dispose()
 }
 
-function Generate-Foreground($size, $outPath) {
-    # Adaptive icon foreground (108dp canvas with safe zone in the middle)
-    $bmp = New-Object System.Drawing.Bitmap $size, $size
+# 2. Generate Adaptive Icon Foreground (108dp canvas, safe zone center 66dp)
+function Generate-Adaptive-Foreground($size, $outPath) {
+    $bmp = [System.Drawing.Bitmap]::new($size, $size)
     $g = [System.Drawing.Graphics]::FromImage($bmp)
     $g.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::AntiAlias
     $g.TextRenderingHint = [System.Drawing.Text.TextRenderingHint]::AntiAliasGridFit
     $g.Clear([System.Drawing.Color]::Transparent)
 
-    $sealSize = [int]($size * 0.60)
+    # Safe zone size (58% of 108dp canvas)
+    $sealSize = [int]($size * 0.58)
     $offset = [int](($size - $sealSize) / 2)
     $radius = [int]($sealSize * 0.22)
 
-    $path = New-Object System.Drawing.Drawing2D.GraphicsPath
-    $path.AddArc($offset, $offset, $radius, $radius, 180, 90)
-    $path.AddArc($offset + $sealSize - $radius, $offset, $radius, $radius, 270, 90)
-    $path.AddArc($offset + $sealSize - $radius, $offset + $sealSize - $radius, $radius, $radius, 0, 90)
-    $path.AddArc($offset, $offset + $sealSize - $radius, $radius, $radius, 90, 90)
-    $path.CloseFigure()
+    # Decorative inner seal frame
+    $innerPath = [System.Drawing.Drawing2D.GraphicsPath]::new()
+    $innerPath.AddArc($offset, $offset, $radius, $radius, 180, 90)
+    $innerPath.AddArc($offset + $sealSize - $radius, $offset, $radius, $radius, 270, 90)
+    $innerPath.AddArc($offset + $sealSize - $radius, $offset + $sealSize - $radius, $radius, $radius, 0, 90)
+    $innerPath.AddArc($offset, $offset + $sealSize - $radius, $radius, $radius, 90, 90)
+    $innerPath.CloseFigure()
 
-    $sealColor = [System.Drawing.ColorTranslator]::FromHtml("#ab3838")
-    $sealBrush = New-Object System.Drawing.SolidBrush $sealColor
-    $g.FillPath($sealBrush, $path)
+    $borderPen = [System.Drawing.Pen]::new([System.Drawing.Color]::FromArgb(215, 255, 255, 255), [float]([Math]::Max(2.0, ($size * 0.018))))
+    $g.DrawPath($borderPen, $innerPath)
 
-    $fontSize = [float]($sealSize * 0.55)
-    $font = New-Object System.Drawing.Font('SimSun', $fontSize, [System.Drawing.FontStyle]::Bold)
-    $textBrush = New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::White)
-    $sf = New-Object System.Drawing.StringFormat
+    # Draw centered '墨' in white
+    $fontSize = [float]($sealSize * 0.58)
+    $font = [System.Drawing.Font]::new('SimSun', $fontSize, [System.Drawing.FontStyle]::Bold)
+    $textBrush = [System.Drawing.SolidBrush]::new([System.Drawing.Color]::White)
+    $sf = [System.Drawing.StringFormat]::new()
     $sf.Alignment = [System.Drawing.StringAlignment]::Center
     $sf.LineAlignment = [System.Drawing.StringAlignment]::Center
 
-    $textRect = New-Object System.Drawing.RectangleF $offset, ($offset + [int]($sealSize * 0.02)), $sealSize, $sealSize
+    $textRect = [System.Drawing.RectangleF]::new([float]$offset, [float]($offset + ($sealSize * 0.02)), [float]$sealSize, [float]$sealSize)
     $g.DrawString($charMo, $font, $textBrush, $textRect, $sf)
 
     $bmp.Save($outPath, [System.Drawing.Imaging.ImageFormat]::Png)
 
+    $borderPen.Dispose()
+    $innerPath.Dispose()
     $textBrush.Dispose()
     $font.Dispose()
-    $sealBrush.Dispose()
-    $path.Dispose()
+    $sf.Dispose()
     $g.Dispose()
     $bmp.Dispose()
 }
 
+# Generate all mipmap densities
 foreach ($entry in $densities.GetEnumerator()) {
     $folder = Join-Path $resDir $entry.Key
     $sz = $entry.Value
-    Generate-Icon $sz $false (Join-Path $folder "ic_launcher.png")
-    Generate-Icon $sz $true (Join-Path $folder "ic_launcher_round.png")
+    Generate-Legacy-Icon $sz $false (Join-Path $folder "ic_launcher.png")
+    Generate-Legacy-Icon $sz $true (Join-Path $folder "ic_launcher_round.png")
     $fgSize = [int]($sz * 108 / 48)
-    Generate-Foreground $fgSize (Join-Path $folder "ic_launcher_foreground.png")
+    Generate-Adaptive-Foreground $fgSize (Join-Path $folder "ic_launcher_foreground.png")
 }
 
-# Also update adaptive icon background to #07080a
+# 3. Update Adaptive Icon Background to solid cinnabar red #a83232 (eliminates black borders completely!)
 $bgXmlPath = "android/app/src/main/res/values/ic_launcher_background.xml"
 $bgXmlContent = '<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="ic_launcher_background">#07080a</color>
+    <color name="ic_launcher_background">#a83232</color>
 </resources>'
 Set-Content -Path $bgXmlPath -Value $bgXmlContent -Encoding UTF8
 
-# Generate dark ink splash screen
+$bgDrawablePath = "android/app/src/main/res/drawable/ic_launcher_background.xml"
+$bgDrawableContent = '<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#a83232"
+        android:pathData="M0,0h108v108h-108z" />
+</vector>'
+Set-Content -Path $bgDrawablePath -Value $bgDrawableContent -Encoding UTF8
+
+# 4. Generate dark ink splash screen
 function Generate-Splash($w, $h, $outPath) {
-    $bmp = New-Object System.Drawing.Bitmap $w, $h
+    $bmp = [System.Drawing.Bitmap]::new($w, $h)
     $g = [System.Drawing.Graphics]::FromImage($bmp)
     $g.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::AntiAlias
     $g.TextRenderingHint = [System.Drawing.Text.TextRenderingHint]::AntiAliasGridFit
 
-    $bgBrush = New-Object System.Drawing.SolidBrush ([System.Drawing.ColorTranslator]::FromHtml("#07080a"))
+    $bgBrush = [System.Drawing.SolidBrush]::new([System.Drawing.ColorTranslator]::FromHtml("#07080a"))
     $g.FillRectangle($bgBrush, 0, 0, $w, $h)
 
     $sealSize = [int]($w * 0.35)
@@ -134,24 +175,24 @@ function Generate-Splash($w, $h, $outPath) {
     $y = [int](($h - $sealSize) / 2) - 20
     $radius = [int]($sealSize * 0.22)
 
-    $path = New-Object System.Drawing.Drawing2D.GraphicsPath
+    $path = [System.Drawing.Drawing2D.GraphicsPath]::new()
     $path.AddArc($x, $y, $radius, $radius, 180, 90)
     $path.AddArc($x + $sealSize - $radius, $y, $radius, $radius, 270, 90)
     $path.AddArc($x + $sealSize - $radius, $y + $sealSize - $radius, $radius, $radius, 0, 90)
     $path.AddArc($x, $y + $sealSize - $radius, $radius, $radius, 90, 90)
     $path.CloseFigure()
 
-    $sealBrush = New-Object System.Drawing.SolidBrush ([System.Drawing.ColorTranslator]::FromHtml("#ab3838"))
+    $sealBrush = [System.Drawing.SolidBrush]::new([System.Drawing.ColorTranslator]::FromHtml("#a83232"))
     $g.FillPath($sealBrush, $path)
 
     $fontSize = [float]($sealSize * 0.55)
-    $font = New-Object System.Drawing.Font('SimSun', $fontSize, [System.Drawing.FontStyle]::Bold)
-    $textBrush = New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::White)
-    $sf = New-Object System.Drawing.StringFormat
+    $font = [System.Drawing.Font]::new('SimSun', $fontSize, [System.Drawing.FontStyle]::Bold)
+    $textBrush = [System.Drawing.SolidBrush]::new([System.Drawing.Color]::White)
+    $sf = [System.Drawing.StringFormat]::new()
     $sf.Alignment = [System.Drawing.StringAlignment]::Center
     $sf.LineAlignment = [System.Drawing.StringAlignment]::Center
 
-    $textRect = New-Object System.Drawing.RectangleF $x, ($y + [int]($sealSize * 0.02)), $sealSize, $sealSize
+    $textRect = [System.Drawing.RectangleF]::new([float]$x, [float]($y + ($sealSize * 0.02)), [float]$sealSize, [float]$sealSize)
     $g.DrawString($charMo, $font, $textBrush, $textRect, $sf)
 
     $bmp.Save($outPath, [System.Drawing.Imaging.ImageFormat]::Png)
@@ -161,10 +202,11 @@ function Generate-Splash($w, $h, $outPath) {
     $sealBrush.Dispose()
     $path.Dispose()
     $bgBrush.Dispose()
+    $sf.Dispose()
     $g.Dispose()
     $bmp.Dispose()
 }
 
 Generate-Splash 480 800 "android/app/src/main/res/drawable/splash.png"
 
-Write-Host "All Android icons and backgrounds generated successfully!"
+Write-Host "All Android icons regenerated with pure cinnabar background and zero black borders!"

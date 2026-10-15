@@ -11,9 +11,11 @@ import { MemberListCard } from './components/MemberListCard';
 import { MobileMemberModal } from './components/MobileMemberModal';
 import { AfkUnlockModal } from './components/AfkUnlockModal';
 import { getCharCount } from './utils/maskCipher';
+import { notificationService } from './services/notification';
 
 const STORAGE_KEY = 'encchat_user_session_v2';
 const AFK_LOCK_KEY = 'encchat_afk_locked_v2';
+const MESSAGE_CACHE_PREFIX = 'encchat_cached_messages_v1_';
 
 export const App: React.FC = () => {
   const [session, setSession] = useState<RoomSession | null>(() => {
@@ -28,7 +30,26 @@ export const App: React.FC = () => {
   const [cryptoKey, setCryptoKey] = useState<CryptoKey | null>(null);
   const [connectionState, setConnectionState] = useState<ConnectionState>('disconnected');
   const [peers, setPeers] = useState<PeerUser[]>([]);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+
+  // Load cached messages immediately on startup to eliminate re-fetching blank screen
+  const [messages, setMessages] = useState<ChatMessage[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const sess = JSON.parse(saved);
+        if (sess?.roomId) {
+          const cached = localStorage.getItem(MESSAGE_CACHE_PREFIX + sess.roomId);
+          if (cached) {
+            return JSON.parse(cached);
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to load message cache:', e);
+    }
+    return [];
+  });
+
   const [systemNotices, setSystemNotices] = useState<string[]>([]);
   
   // Persistent AFK lock state: survives page reload (F5)
@@ -58,16 +79,37 @@ export const App: React.FC = () => {
     sessionRef.current = session;
   }, [session]);
 
+  // Request notification permissions on mount
+  useEffect(() => {
+    notificationService.init();
+  }, []);
+
+  // Save messages to local cache whenever messages change (keeps up to 200 messages with decryptedText)
+  useEffect(() => {
+    if (session?.roomId && messages.length > 0) {
+      try {
+        const toCache = messages.slice(-200);
+        localStorage.setItem(MESSAGE_CACHE_PREFIX + session.roomId, JSON.stringify(toCache));
+      } catch (e) {
+        console.warn('Failed to save message cache:', e);
+      }
+    }
+  }, [session?.roomId, messages]);
+
   // Handle incoming encrypted message with persistent isSelf identity check
   const handleIncomingMessage = useCallback(async (msg: ChatMessage) => {
+    const currentSession = sessionRef.current;
+    const isSelf = Boolean(
+      msg.isSelf ||
+      (currentSession && (msg.senderName === currentSession.userName || msg.senderId === currentSession.userId))
+    );
+
+    // Trigger background notification if user is not in app
+    notificationService.notifyNewMessage(msg.senderName, isSelf);
+
     setMessages((prev) => {
       if (prev.some((m) => m.id === msg.id)) return prev;
 
-      const currentSession = sessionRef.current;
-      const isSelf = Boolean(
-        msg.isSelf ||
-        (currentSession && (msg.senderName === currentSession.userName || msg.senderId === currentSession.userId))
-      );
       const normalizedMsg: ChatMessage = {
         ...msg,
         isSelf,
@@ -98,40 +140,78 @@ export const App: React.FC = () => {
     });
   }, []);
 
-  // Handle history replay with persistent isSelf identity check
+  // Handle history replay with smart cache merge to eliminate re-decryption blank screen
   const handleIncomingHistory = useCallback(async (historyList: ChatMessage[]) => {
     const key = cryptoKeyRef.current;
     const currentSession = sessionRef.current;
 
-    const decryptedList = await Promise.all(
-      historyList.map(async (msg) => {
+    setMessages((prev) => {
+      const prevMap = new Map<string, ChatMessage>(prev.map((m) => [m.id, m]));
+      const toDecrypt: ChatMessage[] = [];
+
+      for (const serverMsg of historyList) {
+        const existing = prevMap.get(serverMsg.id);
         const isSelf = Boolean(
-          msg.isSelf ||
-          (currentSession && (msg.senderName === currentSession.userName || msg.senderId === currentSession.userId))
+          serverMsg.isSelf ||
+          (currentSession && (serverMsg.senderName === currentSession.userName || serverMsg.senderId === currentSession.userId))
         );
-        const isRead = Boolean(msg.isRead);
-        const readAt = msg.readAt;
+        const isRead = Boolean(serverMsg.isRead);
+        const readAt = serverMsg.readAt;
 
-        if (msg.decryptedText) {
-          return { ...msg, isSelf, isRead, readAt };
-        }
-
-        if (key && msg.encrypted) {
-          try {
-            const plaintext = await decryptMessage(msg.encrypted, key);
-            return { ...msg, isSelf, isRead, readAt, decryptedText: plaintext };
-          } catch {
-            return { ...msg, isSelf, isRead, readAt, decryptionError: true };
+        if (existing) {
+          // Already in local cache! Keep cached decryptedText to avoid lag
+          const updated: ChatMessage = {
+            ...existing,
+            isSelf,
+            isRead: isRead || existing.isRead,
+            readAt: readAt || existing.readAt,
+            decryptedText: existing.decryptedText || serverMsg.decryptedText,
+          };
+          prevMap.set(serverMsg.id, updated);
+          if (!updated.decryptedText && key && updated.encrypted && !updated.isSelf) {
+            toDecrypt.push(updated);
+          }
+        } else {
+          // Newly arrived message from server history
+          const newMsg: ChatMessage = {
+            ...serverMsg,
+            isSelf,
+            isRead,
+            readAt,
+          };
+          prevMap.set(serverMsg.id, newMsg);
+          if (newMsg.decryptedText) {
+            // Already has plaintext
+          } else if (key && newMsg.encrypted && !newMsg.isSelf) {
+            toDecrypt.push(newMsg);
           }
         }
-        return { ...msg, isSelf, isRead, readAt };
-      })
-    );
+      }
 
-    setMessages((prev) => {
-      const existingIds = new Set(prev.map((m) => m.id));
-      const newItems = decryptedList.filter((m) => !existingIds.has(m.id));
-      return [...prev, ...newItems].sort((a, b) => a.timestamp - b.timestamp);
+      if (toDecrypt.length > 0 && key) {
+        Promise.all(
+          toDecrypt.map(async (msg) => {
+            try {
+              const text = await decryptMessage(msg.encrypted, key);
+              return { id: msg.id, text };
+            } catch {
+              return { id: msg.id, error: true };
+            }
+          })
+        ).then((results) => {
+          setMessages((cur) =>
+            cur.map((m) => {
+              const found = results.find((r) => r.id === m.id);
+              if (found) {
+                return found.text ? { ...m, decryptedText: found.text } : { ...m, decryptionError: true };
+              }
+              return m;
+            })
+          );
+        });
+      }
+
+      return Array.from(prevMap.values()).sort((a, b) => a.timestamp - b.timestamp);
     });
   }, []);
 

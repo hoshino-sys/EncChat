@@ -25,7 +25,7 @@ export const AfkUnlockModal: React.FC<AfkUnlockModalProps> = ({ onUnlock, onClos
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pt-[calc(env(safe-area-inset-top,0px)+1rem)] pb-[calc(env(safe-area-inset-bottom,0px)+1rem)] bg-black/75 backdrop-blur-2xl">
       <div className="w-full max-w-xs rounded-3xl white-glass p-6 border border-white/25 shadow-[0_24px_70px_rgba(0,0,0,0.85)] animate-fade-in relative">
         {/* Close icon */}
         <button

@@ -52,7 +52,7 @@ export const MobileMemberModal: React.FC<MobileMemberModalProps> = ({
         aria-hidden="true"
       />
 
-      <div className="relative w-full sm:max-w-sm rounded-t-3xl sm:rounded-3xl white-glass p-6 border border-white/20 shadow-[0_24px_70px_rgba(0,0,0,0.85)] z-10 space-y-5">
+      <div className="relative w-full sm:max-w-sm rounded-t-3xl sm:rounded-3xl white-glass p-6 pb-[calc(env(safe-area-inset-bottom,0px)+1.5rem)] border border-white/20 shadow-[0_24px_70px_rgba(0,0,0,0.85)] z-10 space-y-5">
         {/* Header */}
         <div className="flex items-center justify-between pb-3.5 border-b border-white/10">
           <div className="flex items-center gap-2">
