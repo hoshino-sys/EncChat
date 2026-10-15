@@ -40,6 +40,24 @@ export default {
       });
     }
 
+    // Version Check endpoint for Android In-App Update
+    if (url.pathname === '/api/version' || url.pathname === '/api/check-update') {
+      return new Response(JSON.stringify({
+        latestVersion: '1.5.0',
+        versionCode: 5,
+        downloadUrl: 'https://chat.nightstar.top/download/moyin-encchat-v1.5-debug.apk',
+        githubDownloadUrl: 'https://github.com/hoshino-sys/EncChat/releases/latest',
+        releaseNotes: '1. PC 端支持按住 Ctrl + 鼠标右键透视查看密函与密图\n2. 彻底修复小夜星端已读未读回执同步问题\n3. 新增东方古典水墨晕染与朱砂落印开屏动画\n4. 新增气泡轻柔弹性滑入与全套流畅物理动效\n5. 支持应用内一键自动检测并更新安装',
+        pubDate: '2026-10-15',
+        forceUpdate: false,
+      }), {
+        headers: {
+          'Content-Type': 'application/json',
+          ...CORS_HEADERS
+        }
+      });
+    }
+
     // Default room ID for the private chamber
     const roomId = url.searchParams.get('roomId') || 'encchat-sanctuary';
     const id = env.CHAT_ROOM.idFromName(roomId);
@@ -330,33 +348,33 @@ export class ChatRoom {
           case 'mark_read': {
             const { messageIds, readerName } = data;
             if (Array.isArray(messageIds) && messageIds.length > 0) {
-              const updatedIds: string[] = [];
               const readAt = Date.now();
               const targetSet = new Set(messageIds);
 
               try {
-                const historyMap = await this.state.storage.list<any>({ prefix: 'msg_', limit: 500 });
+                // Search recent messages in reverse chronological order to guarantee hit on new messages
+                const historyMap = await this.state.storage.list<any>({ prefix: 'msg_', reverse: true, limit: 200 });
                 for (const [key, storedMsg] of historyMap.entries()) {
-                  if (storedMsg && targetSet.has(storedMsg.id) && !storedMsg.isRead) {
-                    storedMsg.isRead = true;
-                    storedMsg.readAt = readAt;
-                    storedMsg.readBy = readerName;
-                    await this.state.storage.put(key, storedMsg);
-                    updatedIds.push(storedMsg.id);
+                  if (storedMsg && targetSet.has(storedMsg.id)) {
+                    if (!storedMsg.isRead) {
+                      storedMsg.isRead = true;
+                      storedMsg.readAt = readAt;
+                      storedMsg.readBy = readerName;
+                      await this.state.storage.put(key, storedMsg);
+                    }
                   }
                 }
               } catch (err) {
                 console.error('Failed to update read status in SQLite:', err);
               }
 
-              if (updatedIds.length > 0) {
-                this.broadcast({
-                  type: 'messages_read',
-                  messageIds: updatedIds,
-                  readerName,
-                  readAt
-                });
-              }
+              // Always broadcast messages_read to all clients in the room to update sender UI
+              this.broadcast({
+                type: 'messages_read',
+                messageIds,
+                readerName,
+                readAt
+              });
             }
             break;
           }

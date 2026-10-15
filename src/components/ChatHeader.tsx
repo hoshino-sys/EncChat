@@ -1,5 +1,5 @@
 import React from 'react';
-import { LogOut, Lock, Unlock, Users } from 'lucide-react';
+import { LogOut, Lock, Unlock, Users, Sparkles } from 'lucide-react';
 import { ConnectionState, UserRole } from '../types/chat';
 
 interface ChatHeaderProps {
@@ -13,6 +13,8 @@ interface ChatHeaderProps {
   onOpenMembers: () => void;
   onReconnect?: () => void;
   onLeaveRoom: () => void;
+  updateVersion?: string | null;
+  onOpenUpdate?: () => void;
 }
 
 export const ChatHeader: React.FC<ChatHeaderProps> = ({
@@ -26,6 +28,8 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
   onOpenMembers,
   onReconnect,
   onLeaveRoom,
+  updateVersion,
+  onOpenUpdate,
 }) => {
   const statusDotColor = {
     connected: 'bg-[#5b9e7c] shadow-[0_0_6px_#5b9e7c]',
@@ -83,8 +87,22 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
         )}
       </div>
 
-      {/* Right: AFK Privacy Button, User Badge & Leave */}
+      {/* Right: Update badge, AFK Privacy Button, User Badge & Leave */}
       <div className="flex items-center gap-1.5 sm:gap-2">
+        {/* In-App Update Badge */}
+        {updateVersion && onOpenUpdate && (
+          <button
+            type="button"
+            onClick={onOpenUpdate}
+            className="flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-xl bg-[#ab3838]/25 hover:bg-[#ab3838]/35 border border-[#ab3838]/50 text-[#ffc5c5] text-xs font-serif animate-pulse cursor-pointer shadow-[0_2px_10px_rgba(171,56,56,0.35)] transition-all active:scale-95"
+            title={`发现新版本 v${updateVersion}，点击更新`}
+          >
+            <Sparkles className="w-3.5 h-3.5 text-[#ff8080]" />
+            <span className="hidden xs:inline">新版</span>
+            <span className="font-mono text-[11px]">v{updateVersion}</span>
+          </button>
+        )}
+
         {/* AFK Privacy Lock Button */}
         <button
           type="button"

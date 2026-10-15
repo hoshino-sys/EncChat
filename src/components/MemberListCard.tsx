@@ -175,7 +175,7 @@ export const MemberListCard: React.FC<MemberListCardProps> = ({
             <span className="w-1 h-1 rounded-full bg-[#5b9e7c]" />
             <span>端对端加密 (AES-256-GCM)</span>
           </div>
-          <div className="text-[9px] text-[#636a7b]">查阅：按住 Ctrl+空格+右键 (电脑) / 轻按3秒 (手机)</div>
+          <div className="text-[9px] text-[#636a7b]">查阅：按住 Ctrl+右键 (电脑) / 轻触3秒 (手机)</div>
         </div>
       </div>
     </div>

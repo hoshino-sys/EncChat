@@ -45,7 +45,7 @@ export const StealthBubble: React.FC<StealthBubbleProps> = ({
 
   // Reveal condition:
   // 1. Mobile touch: Tap reveals for 3 seconds with countdown
-  // 2. PC Desktop: Ctrl + Space + Right-Click held down on the bubble
+  // 2. PC Desktop: Ctrl + Right-Click held down on the bubble
   const isRevealed =
     !isAfkLocked &&
     (isTapActive || (isComboActive && isRightClickDown && isHovered));
@@ -136,7 +136,7 @@ export const StealthBubble: React.FC<StealthBubbleProps> = ({
 
   return (
     <div
-      className={`group flex flex-col mb-4 transition-all duration-300 select-none ${
+      className={`group flex flex-col mb-4 transition-all duration-300 select-none animate-bubble-enter ${
         isSelf ? 'items-end' : 'items-start'
       }`}
     >
@@ -171,7 +171,7 @@ export const StealthBubble: React.FC<StealthBubbleProps> = ({
           <span
             className={`inline-flex items-center gap-0.5 text-[10px] font-serif tracking-wider transition-colors duration-200 ${
               message.isRead
-                ? 'text-[#6dbb89] opacity-95 font-medium'
+                ? 'text-[#6dbb89] opacity-95 font-medium animate-read-pulse'
                 : 'text-[#d6a75d] opacity-85'
             }`}
             title={message.isRead ? '对方已解印查阅' : '对方尚未查阅'}

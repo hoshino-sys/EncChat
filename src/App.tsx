@@ -14,6 +14,9 @@ import { ImageLightboxModal } from './components/ImageLightboxModal';
 import { compressImage } from './utils/imageCompressor';
 import { getCharCount } from './utils/maskCipher';
 import { notificationService } from './services/notification';
+import { SplashScreen } from './components/SplashScreen';
+import { UpdateModal } from './components/UpdateModal';
+import { checkForUpdate, VersionInfo } from './services/updateChecker';
 
 const STORAGE_KEY = 'encchat_user_session_v2';
 const AFK_LOCK_KEY = 'encchat_afk_locked_v2';
@@ -96,7 +99,12 @@ export const App: React.FC = () => {
     timestamp: number;
   } | null>(null);
 
-  // Combination peek hook: Ctrl + Space
+  // Splash & In-App Update States
+  const [showSplash, setShowSplash] = useState(true);
+  const [versionInfo, setVersionInfo] = useState<VersionInfo | null>(null);
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
+
+  // Combination peek hook: Ctrl + RightClick
   const { isComboActive } = usePeekCombo();
 
   const networkRef = useRef<ChatNetworkService | null>(null);
@@ -114,6 +122,19 @@ export const App: React.FC = () => {
   // Request notification permissions on mount
   useEffect(() => {
     notificationService.init();
+  }, []);
+
+  // Check for in-app updates
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      checkForUpdate().then((info) => {
+        if (info) {
+          setVersionInfo(info);
+          setShowUpdateModal(true);
+        }
+      });
+    }, 1800);
+    return () => clearTimeout(timer);
   }, []);
 
   // Save messages to local cache whenever messages change
@@ -536,6 +557,8 @@ export const App: React.FC = () => {
             onOpenMembers={() => setShowMobileMembers(true)}
             onReconnect={() => networkRef.current?.reconnect()}
             onLeaveRoom={handleLeaveRoom}
+            updateVersion={versionInfo?.latestVersion}
+            onOpenUpdate={() => setShowUpdateModal(true)}
           />
 
           {/* Body: Left Sidebar (Desktop) + Right Chat Stream */}
@@ -607,6 +630,17 @@ export const App: React.FC = () => {
           senderName={previewImage.senderName}
           timestamp={previewImage.timestamp}
           onClose={() => setPreviewImage(null)}
+        />
+      )}
+
+      {/* Ink Splash Screen */}
+      {showSplash && <SplashScreen onFinish={() => setShowSplash(false)} />}
+
+      {/* In-App Update Modal */}
+      {showUpdateModal && versionInfo && (
+        <UpdateModal
+          versionInfo={versionInfo}
+          onClose={() => setShowUpdateModal(false)}
         />
       )}
     </div>
