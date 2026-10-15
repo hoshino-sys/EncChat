@@ -85,6 +85,10 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({ versionInfo, onClose }
             ))}
           </div>
 
+          <div className="text-[11px] text-stone-500 font-serif leading-relaxed px-1">
+            ※ 首次从测试版更新若遇系统提示「签名不一致」，需先卸载旧版后安装；此后所有新版均支持应用内一键无缝平滑覆盖升级。
+          </div>
+
           {hasStarted && (
             <div className="flex items-center space-x-2 p-3 rounded-xl bg-[#6dbb89]/10 border border-[#6dbb89]/30 text-[#6dbb89] text-xs font-serif animate-fadeIn">
               <CheckCircle2 className="w-4 h-4 shrink-0" />
