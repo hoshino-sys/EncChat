@@ -22,6 +22,7 @@ export class ChatNetworkService {
   private pingInterval: number | null = null;
   private isExplicitlyClosed: boolean = false;
   private broadcastChannel: BroadcastChannel | null = null;
+  private pendingOutbox: any[] = [];
 
   constructor(callbacks: WebSocketCallbacks) {
     this.callbacks = callbacks;
@@ -92,6 +93,9 @@ export class ChatNetworkService {
           userName: this.userName,
           authHash: this.authHash,
         });
+
+        // Flush all pending outbox messages immediately upon connection
+        this.flushPendingOutbox();
       };
 
       this.ws.onmessage = (event) => {
@@ -282,7 +286,29 @@ export class ChatNetworkService {
 
   private sendRaw(data: any) {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      this.ws.send(JSON.stringify(data));
+      try {
+        this.ws.send(JSON.stringify(data));
+      } catch (err) {
+        console.warn('ws.send failed, enqueuing to pending outbox:', err);
+        this.pendingOutbox.push(data);
+      }
+    } else {
+      // Retain message in pending outbox so it is NEVER swallowed during connection/reconnection
+      this.pendingOutbox.push(data);
+    }
+  }
+
+  private flushPendingOutbox() {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+    while (this.pendingOutbox.length > 0) {
+      const item = this.pendingOutbox.shift();
+      try {
+        this.ws.send(JSON.stringify(item));
+      } catch (e) {
+        console.warn('Failed to flush outbox item, requeueing:', e);
+        this.pendingOutbox.unshift(item);
+        break;
+      }
     }
   }
 

@@ -223,6 +223,34 @@ export const App: React.FC = () => {
     );
   }, []);
 
+  // Proactive self-healing: automatically decrypt any messages that arrived before cryptoKey was ready
+  useEffect(() => {
+    if (!cryptoKey || messages.length === 0) return;
+    const pendingDecrypt = messages.filter((m) => !m.isSelf && !m.decryptedText && m.encrypted);
+    if (pendingDecrypt.length === 0) return;
+
+    Promise.all(
+      pendingDecrypt.map(async (m) => {
+        try {
+          const text = await decryptMessage(m.encrypted, cryptoKey);
+          return { id: m.id, text };
+        } catch {
+          return { id: m.id, error: true };
+        }
+      })
+    ).then((results) => {
+      setMessages((cur) =>
+        cur.map((m) => {
+          const found = results.find((r) => r.id === m.id);
+          if (found) {
+            return found.text ? { ...m, decryptedText: found.text } : { ...m, decryptionError: true };
+          }
+          return m;
+        })
+      );
+    });
+  }, [cryptoKey, messages]);
+
   // Trigger mark-as-read when local user deciphers/unmasks a message
   const handleMarkRead = useCallback((messageId: string) => {
     if (!networkRef.current) return;
@@ -264,6 +292,7 @@ export const App: React.FC = () => {
       try {
         const key = await deriveKey(session.roomKey, session.roomId);
         if (!isMounted) return;
+        cryptoKeyRef.current = key;
         setCryptoKey(key);
 
         const network = new ChatNetworkService({

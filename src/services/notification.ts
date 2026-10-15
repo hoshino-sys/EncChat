@@ -31,13 +31,17 @@ class NotificationService {
   private async createChannelIfNeeded() {
     if (this.channelCreated) return;
     try {
+      // Channel ID encchat_headsup_v3 ensures Android registers fresh MAX priority settings
       await LocalNotifications.createChannel({
-        id: 'encchat_messages',
-        name: '墨隐信函提醒',
-        description: '当收到受权成员新密信时发送提醒',
-        importance: 4, // HIGH importance for heads-up banner & vibration
-        visibility: 1, // Visible on lock screen
+        id: 'encchat_headsup_v3',
+        name: '墨隐信函横幅通知',
+        description: '收到新密函时高优先级横幅悬浮浮窗与声音震动提醒',
+        importance: 5, // MAX importance for heads-up banner (悬浮顶栏横幅)
+        visibility: 1, // Public on lock screen
         vibration: true,
+        sound: 'default',
+        lights: true,
+        lightColor: '#a83232',
       });
       this.channelCreated = true;
     } catch (e) {
@@ -67,9 +71,11 @@ class NotificationService {
               title,
               body,
               id: notifId,
-              channelId: 'encchat_messages',
+              channelId: 'encchat_headsup_v3',
               smallIcon: 'ic_launcher',
               iconColor: '#a83232',
+              sound: 'default',
+              autoCancel: true,
             },
           ],
         });

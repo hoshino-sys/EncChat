@@ -280,7 +280,7 @@ export class ChatRoom {
 
             // Send message history from SQLite storage to this client
             try {
-              const historyMap = await this.state.storage.list<any>({ prefix: 'msg_', limit: 500 });
+              const historyMap = await this.state.storage.list<any>({ prefix: 'msg_', limit: 1000 });
               const messages = Array.from(historyMap.values()).sort((a, b) => a.timestamp - b.timestamp);
               ws.send(JSON.stringify({
                 type: 'history',
