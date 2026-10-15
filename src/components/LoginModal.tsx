@@ -8,6 +8,7 @@ interface LoginModalProps {
 }
 
 import { sha256 } from 'js-sha256';
+import { getApiUrl } from '../services/apiConfig';
 
 const PRESET_USERS = [
   { name: '夜星' as const, role: 'admin' as const, roleLabel: '管理员' },
@@ -52,7 +53,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onLogin, savedSession })
 
     async function checkStatus() {
       try {
-        const res = await fetch(`/api/account-status?username=${encodeURIComponent(selectedUser)}`);
+        const res = await fetch(getApiUrl(`/api/account-status?username=${encodeURIComponent(selectedUser)}`));
         if (res.ok) {
           const data = await res.json();
           if (!isCancelled) {
@@ -124,7 +125,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onLogin, savedSession })
       let serverError = '';
 
       try {
-        const res = await fetch('/api/auth', {
+        const res = await fetch(getApiUrl('/api/auth'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

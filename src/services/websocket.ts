@@ -1,4 +1,5 @@
 import { ChatMessage, PeerUser, ConnectionState } from '../types/chat';
+import { getDefaultWsUrl } from './apiConfig';
 
 export interface WebSocketCallbacks {
   onMessage: (message: ChatMessage) => void;
@@ -49,34 +50,10 @@ export class ChatNetworkService {
     }
 
     // Determine WebSocket endpoint
-    let savedCustomUrl = typeof window !== 'undefined' ? localStorage.getItem('encchat_custom_ws_url') : null;
-    // Auto-clean old .workers.dev domain if it was saved, since it is blocked in mainland China
-    if (savedCustomUrl && savedCustomUrl.includes('.workers.dev')) {
-      try {
-        localStorage.removeItem('encchat_custom_ws_url');
-      } catch {}
-      savedCustomUrl = null;
-    }
-
-    const envWsUrl = import.meta.env.VITE_WS_URL;
-
     if (customWsUrl) {
       this.wsUrl = customWsUrl;
-    } else if (savedCustomUrl && savedCustomUrl.trim()) {
-      this.wsUrl = savedCustomUrl.trim();
-    } else if (envWsUrl && envWsUrl.trim()) {
-      this.wsUrl = envWsUrl.trim();
     } else {
-      const isHttps = window.location.protocol === 'https:';
-      const wsProto = isHttps ? 'wss:' : 'ws:';
-      
-      // If running on Vite dev server (port 5173), default relay to local 8787
-      if (window.location.port === '5173') {
-        this.wsUrl = `${wsProto}//${window.location.hostname}:8787/ws`;
-      } else {
-        // Direct same-origin WebSocket: chat.nightstar.top/ws (bypasses China GFW blocks on workers.dev)
-        this.wsUrl = `${wsProto}//${window.location.host}/ws`;
-      }
+      this.wsUrl = getDefaultWsUrl();
     }
 
     this.initWebSocket();
