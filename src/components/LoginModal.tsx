@@ -7,6 +7,8 @@ interface LoginModalProps {
   savedSession?: RoomSession | null;
 }
 
+import { sha256 } from 'js-sha256';
+
 const PRESET_USERS = [
   { name: '夜星' as const, role: 'admin' as const, roleLabel: '管理员' },
   { name: '小夜星' as const, role: 'user' as const, roleLabel: '普通用户' },
@@ -15,12 +17,18 @@ const PRESET_USERS = [
 type PresetUserName = '夜星' | '小夜星';
 
 async function hashPassword(password: string, username: string): Promise<string> {
-  const enc = new TextEncoder();
-  const data = enc.encode(`${username}::encchat_salt_v2::${password}`);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  return Array.from(new Uint8Array(hashBuffer))
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('');
+  const payload = `${username}::encchat_salt_v2::${password}`;
+  // Try native crypto.subtle if available, otherwise use pure JS sha256 fallback
+  if (typeof window !== 'undefined' && window.crypto?.subtle?.digest) {
+    try {
+      const enc = new TextEncoder();
+      const hashBuffer = await window.crypto.subtle.digest('SHA-256', enc.encode(payload));
+      return Array.from(new Uint8Array(hashBuffer))
+        .map((b) => b.toString(16).padStart(2, '0'))
+        .join('');
+    } catch {}
+  }
+  return sha256(payload);
 }
 
 export const LoginModal: React.FC<LoginModalProps> = ({ onLogin, savedSession }) => {

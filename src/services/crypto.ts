@@ -1,5 +1,17 @@
 import { EncryptedPayload } from '../types/chat';
 
+function getSubtle(): SubtleCrypto {
+  if (typeof window !== 'undefined') {
+    if (window.crypto?.subtle) {
+      return window.crypto.subtle;
+    }
+    if (window.location.protocol === 'http:' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+      window.location.replace('https://' + window.location.host + window.location.pathname + window.location.search + window.location.hash);
+    }
+  }
+  throw new Error('未检测到安全加密环境 (WebCrypto)，请使用 HTTPS 访问以开启加密支持');
+}
+
 // Helper: Uint8Array to Base64
 function uint8ArrayToBase64(bytes: Uint8Array): string {
   let binary = '';
@@ -25,8 +37,9 @@ function base64ToUint8Array(base64: string): Uint8Array {
  * Derives a 256-bit AES-GCM key from a user passphrase and roomId using PBKDF2.
  */
 export async function deriveKey(passphrase: string, roomId: string): Promise<CryptoKey> {
+  const subtle = getSubtle();
   const enc = new TextEncoder();
-  const passwordKey = await window.crypto.subtle.importKey(
+  const passwordKey = await subtle.importKey(
     'raw',
     enc.encode(passphrase),
     { name: 'PBKDF2' },
@@ -37,7 +50,7 @@ export async function deriveKey(passphrase: string, roomId: string): Promise<Cry
   // Use roomId as deterministic salt
   const salt = enc.encode(`EncChat-Salt-v1:${roomId.trim().toLowerCase()}`);
 
-  return await window.crypto.subtle.deriveKey(
+  return await subtle.deriveKey(
     {
       name: 'PBKDF2',
       salt,
@@ -55,11 +68,12 @@ export async function deriveKey(passphrase: string, roomId: string): Promise<Cry
  * Encrypts a plaintext message string with AES-GCM.
  */
 export async function encryptMessage(text: string, key: CryptoKey): Promise<EncryptedPayload> {
+  const subtle = getSubtle();
   const enc = new TextEncoder();
-  const iv = window.crypto.getRandomValues(new Uint8Array(12)); // 96-bit IV recommended for GCM
+  const iv = (window.crypto || crypto).getRandomValues(new Uint8Array(12)); // 96-bit IV recommended for GCM
   const encodedText = enc.encode(text);
 
-  const cipherBuffer = await window.crypto.subtle.encrypt(
+  const cipherBuffer = await subtle.encrypt(
     {
       name: 'AES-GCM',
       iv,
@@ -78,10 +92,11 @@ export async function encryptMessage(text: string, key: CryptoKey): Promise<Encr
  * Decrypts an encrypted payload with AES-GCM. Throws if wrong key or tampered.
  */
 export async function decryptMessage(payload: EncryptedPayload, key: CryptoKey): Promise<string> {
+  const subtle = getSubtle();
   const iv = base64ToUint8Array(payload.iv);
   const ciphertext = base64ToUint8Array(payload.ciphertext);
 
-  const decryptedBuffer = await window.crypto.subtle.decrypt(
+  const decryptedBuffer = await subtle.decrypt(
     {
       name: 'AES-GCM',
       iv: iv as unknown as BufferSource,

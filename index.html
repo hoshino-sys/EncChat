@@ -2,6 +2,12 @@
 <html lang="zh-CN" class="dark">
   <head>
     <meta charset="UTF-8" />
+    <script>
+      // Automatically enforce HTTPS on non-localhost domains so WebCrypto is always accessible
+      if (location.protocol === 'http:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+        location.replace('https://' + location.host + location.pathname + location.search + location.hash);
+      }
+    </script>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='30' height='30' x='1' y='1' rx='6' fill='%23ab3838'/><text x='16' y='22' font-family='serif' font-size='18' text-anchor='middle' fill='%23ffffff'>墨</text></svg>" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content" />
     <meta name="theme-color" content="#07080a" />
