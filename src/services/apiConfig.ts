@@ -23,8 +23,8 @@ export function isCapacitorNative(): boolean {
 export function getApiUrl(path: string): string {
   const cleanPath = path.startsWith('/') ? path : `/${path}`;
 
-  // If running in Android native WebView, use production API base
-  if (isCapacitorNative()) {
+  // If running in Android native WebView or localhost build, use production API base
+  if (isCapacitorNative() || (typeof window !== 'undefined' && window.location.hostname === 'localhost' && window.location.port !== '5173')) {
     const customApi = typeof window !== 'undefined' ? localStorage.getItem('encchat_custom_api_url') : null;
     if (customApi && customApi.trim()) {
       return `${customApi.trim().replace(/\/+$/, '')}${cleanPath}`;

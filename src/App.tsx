@@ -16,7 +16,8 @@ import { getCharCount } from './utils/maskCipher';
 import { notificationService } from './services/notification';
 import { SplashScreen } from './components/SplashScreen';
 import { UpdateModal } from './components/UpdateModal';
-import { checkForUpdate, VersionInfo } from './services/updateChecker';
+import { checkForUpdate, VersionInfo, CURRENT_VERSION_CODE } from './services/updateChecker';
+import { isCapacitorNative } from './services/apiConfig';
 
 const STORAGE_KEY = 'encchat_user_session_v2';
 const AFK_LOCK_KEY = 'encchat_afk_locked_v2';
@@ -138,9 +139,10 @@ export const App: React.FC = () => {
         if (info) {
           setVersionInfo(info);
           setShowUpdateModal(true);
+          notificationService.notifyUpdateAvailable(info.latestVersion, info.downloadUrl);
         }
       });
-    }, 1800);
+    }, 1500);
     return () => clearTimeout(timer);
   }, []);
 
@@ -359,6 +361,29 @@ export const App: React.FC = () => {
           onStatusChange: handleStatusChange,
           onSystemNotice: handleSystemNotice,
           onMessagesRead: handleMessagesRead,
+          onUpdateAvailable: async (info: any) => {
+            if (info && info.latestVersion) {
+              let currentCode = CURRENT_VERSION_CODE;
+              if (isCapacitorNative()) {
+                try {
+                  const capacitor = (window as any).Capacitor;
+                  if (capacitor?.Plugins?.AppUpdate) {
+                    const appVer = await capacitor.Plugins.AppUpdate.getAppVersion();
+                    if (appVer && typeof appVer.versionCode === 'number') {
+                      currentCode = appVer.versionCode;
+                    }
+                  }
+                } catch (e) {
+                  console.warn('Failed to query native app version:', e);
+                }
+              }
+              if (info.versionCode > currentCode) {
+                setVersionInfo(info);
+                setShowUpdateModal(true);
+                notificationService.notifyUpdateAvailable(info.latestVersion, info.downloadUrl);
+              }
+            }
+          },
         });
 
         networkRef.current = network;

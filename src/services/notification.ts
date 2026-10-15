@@ -31,15 +31,14 @@ class NotificationService {
   private async createChannelIfNeeded() {
     if (this.channelCreated) return;
     try {
-      // Channel ID encchat_headsup_v3 ensures Android registers fresh MAX priority settings
+      // Channel ID encchat_headsup_v4 ensures Android registers fresh MAX priority settings with valid drawable icon
       await LocalNotifications.createChannel({
-        id: 'encchat_headsup_v3',
+        id: 'encchat_headsup_v4',
         name: '墨隐信函横幅通知',
-        description: '收到新密函时高优先级横幅悬浮浮窗与声音震动提醒',
+        description: '收到新消息时高优先级横幅悬浮浮窗与声音震动提醒',
         importance: 5, // MAX importance for heads-up banner (悬浮顶栏横幅)
         visibility: 1, // Public on lock screen
         vibration: true,
-        sound: 'default',
         lights: true,
         lightColor: '#a83232',
       });
@@ -52,16 +51,17 @@ class NotificationService {
   public async notifyNewMessage(senderName: string, isSelf: boolean, isImage: boolean = false) {
     if (isSelf) return;
 
-    // Only notify if document is hidden or window is not in focus (user is in background or another app)
-    const isHidden = typeof document !== 'undefined' && (document.hidden || !document.hasFocus());
-    if (!isHidden) {
-      return;
+    // Haptic vibration feedback
+    if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+      try {
+        navigator.vibrate([120, 80, 120]);
+      } catch {}
     }
 
     const title = '墨隐';
     const body = isImage
-      ? `收到来自【${senderName}】的新印函 [图印]`
-      : `收到来自【${senderName}】的新印函`;
+      ? `收到来自【${senderName}】的新消息 [图片]`
+      : `收到来自【${senderName}】的新消息`;
 
     if (isCapacitorNative()) {
       try {
@@ -73,10 +73,9 @@ class NotificationService {
               title,
               body,
               id: notifId,
-              channelId: 'encchat_headsup_v3',
-              smallIcon: 'ic_launcher',
+              channelId: 'encchat_headsup_v4',
+              smallIcon: 'ic_stat_notify',
               iconColor: '#a83232',
-              sound: 'default',
               autoCancel: true,
             },
           ],
@@ -85,11 +84,48 @@ class NotificationService {
         console.warn('Native notification trigger failed:', e);
       }
     } else if (typeof window !== 'undefined' && 'Notification' in window) {
-      if (Notification.permission === 'granted') {
+      // On web browser, only notify if window is not focused to avoid annoying tab switch
+      const isHidden = typeof document !== 'undefined' && (document.hidden || !document.hasFocus());
+      if (isHidden && Notification.permission === 'granted') {
         try {
           new Notification(title, {
             body,
             tag: 'encchat_new_msg',
+          });
+        } catch {}
+      }
+    }
+  }
+
+  public async notifyUpdateAvailable(latestVersion: string, _downloadUrl?: string) {
+    const title = '墨隐 · 发现新版本';
+    const body = `新版本 v${latestVersion} 已就绪，轻触立即更新`;
+
+    if (isCapacitorNative()) {
+      try {
+        await this.createChannelIfNeeded();
+        await LocalNotifications.schedule({
+          notifications: [
+            {
+              title,
+              body,
+              id: 999999,
+              channelId: 'encchat_headsup_v4',
+              smallIcon: 'ic_stat_notify',
+              iconColor: '#a83232',
+              autoCancel: true,
+            },
+          ],
+        });
+      } catch (e) {
+        console.warn('Native update notification failed:', e);
+      }
+    } else if (typeof window !== 'undefined' && 'Notification' in window) {
+      if (Notification.permission === 'granted') {
+        try {
+          new Notification(title, {
+            body,
+            tag: 'encchat_update',
           });
         } catch {}
       }

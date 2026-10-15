@@ -10,8 +10,8 @@ export interface VersionInfo {
   forceUpdate?: boolean;
 }
 
-export const CURRENT_VERSION = '1.5.1';
-export const CURRENT_VERSION_CODE = 6;
+export const CURRENT_VERSION = '1.5.2';
+export const CURRENT_VERSION_CODE = 7;
 
 /**
  * Checks for updates from the Cloudflare Worker version endpoint

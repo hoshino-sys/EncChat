@@ -8,6 +8,7 @@ export interface WebSocketCallbacks {
   onStatusChange: (status: ConnectionState) => void;
   onSystemNotice: (text: string) => void;
   onMessagesRead?: (messageIds: string[], readerName: string, readAt: number) => void;
+  onUpdateAvailable?: (versionInfo: any) => void;
 }
 
 export class ChatNetworkService {
@@ -191,6 +192,11 @@ export class ChatNetworkService {
 
       case 'auth_error':
         this.callbacks.onSystemNotice(`身份校验未过: ${data.error || '未授权'}`);
+        break;
+
+      case 'update_available':
+      case 'version_info':
+        this.callbacks.onUpdateAvailable?.(data);
         break;
     }
   }

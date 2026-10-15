@@ -3,7 +3,6 @@ import { Check, CheckCheck, ImageIcon, Lock, Maximize2 } from 'lucide-react';
 import { ChatMessage, DecryptedImagePayload } from '../types/chat';
 import { generateMaskedRunes, getCharCount } from '../utils/maskCipher';
 import { useScrambleDecrypt } from '../hooks/useScrambleDecrypt';
-import { formatByteSize } from '../utils/imageCompressor';
 
 interface StealthBubbleProps {
   message: ChatMessage;
@@ -249,50 +248,33 @@ export const StealthBubble: React.FC<StealthBubbleProps> = ({
                 )}
               </div>
             ) : (
-              /* Sealed Ancient Image Tile (密印图砖) */
+              /* Sealed Image Tile */
               <div
-                className={`w-[220px] sm:w-[260px] p-4 flex flex-col items-center justify-center select-none rounded-xl bg-gradient-to-br from-[#14161c] via-[#0b0d11] to-[#1a1417] border border-[#a83232]/35 shadow-[inset_0_0_20px_rgba(168,50,50,0.08)] cursor-pointer transition-transform duration-200 ${
-                  isHovered ? 'scale-[1.01] border-[#a83232]/60' : ''
+                className={`w-[180px] sm:w-[220px] p-6 flex flex-col items-center justify-center select-none rounded-xl bg-gradient-to-br from-[#14161c] via-[#0b0d11] to-[#161215] border border-[#a83232]/25 shadow-[inset_0_0_20px_rgba(168,50,50,0.06)] cursor-pointer transition-transform duration-200 ${
+                  isHovered ? 'scale-[1.01] border-[#a83232]/45' : ''
                 }`}
                 style={{
                   aspectRatio: message.imageMeta?.aspectRatio
-                    ? Math.max(0.7, Math.min(message.imageMeta.aspectRatio, 1.8))
+                    ? Math.max(0.8, Math.min(message.imageMeta.aspectRatio, 1.6))
                     : 1.33,
-                  maxHeight: '260px',
-                  minHeight: '130px',
+                  maxHeight: '220px',
+                  minHeight: '120px',
                 }}
               >
                 {/* Corner ancient brackets */}
-                <div className="absolute top-2 left-2 text-[#a83232]/40 text-xs font-mono">⌜</div>
-                <div className="absolute top-2 right-2 text-[#a83232]/40 text-xs font-mono">⌝</div>
-                <div className="absolute bottom-2 left-2 text-[#a83232]/40 text-xs font-mono">⌞</div>
-                <div className="absolute bottom-2 right-2 text-[#a83232]/40 text-xs font-mono">⌟</div>
+                <div className="absolute top-2 left-2 text-[#a83232]/30 text-xs font-mono">⌜</div>
+                <div className="absolute top-2 right-2 text-[#a83232]/30 text-xs font-mono">⌝</div>
+                <div className="absolute bottom-2 left-2 text-[#a83232]/30 text-xs font-mono">⌞</div>
+                <div className="absolute bottom-2 right-2 text-[#a83232]/30 text-xs font-mono">⌟</div>
 
-                <div className="relative mb-2">
-                  <div className="w-12 h-12 rounded-full bg-[#a83232]/10 border border-[#a83232]/40 flex items-center justify-center shadow-[0_0_12px_rgba(168,50,50,0.25)]">
-                    <ImageIcon className="w-6 h-6 text-[#d6a75d] opacity-90" />
+                <div className="relative">
+                  <div className="w-12 h-12 rounded-full bg-[#a83232]/10 border border-[#a83232]/30 flex items-center justify-center shadow-[0_0_12px_rgba(168,50,50,0.15)]">
+                    <ImageIcon className="w-6 h-6 text-[#d6a75d] opacity-75" />
                   </div>
-                  <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-[#0d0f12] border border-[#a83232]/60 flex items-center justify-center">
-                    <Lock className="w-2.5 h-2.5 text-[#e05353]" />
+                  <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-[#0d0f12] border border-[#a83232]/40 flex items-center justify-center">
+                    <Lock className="w-2 h-2 text-[#e05353]" />
                   </div>
                 </div>
-
-                <span className="font-serif text-[13px] text-stone-200 tracking-wider font-medium">
-                  密印图函
-                </span>
-
-                <div className="flex items-center gap-1.5 mt-1 text-[10px] font-mono text-stone-500">
-                  {message.imageMeta?.width && message.imageMeta?.height && (
-                    <span>{message.imageMeta.width}×{message.imageMeta.height}</span>
-                  )}
-                  {message.imageMeta?.size && (
-                    <span>· {formatByteSize(message.imageMeta.size)}</span>
-                  )}
-                </div>
-
-                <span className="mt-2 text-[10px] font-serif text-[#c45353] opacity-80 tracking-widest animate-pulse">
-                  触碰解印 · 谨防窥探
-                </span>
               </div>
             )}
           </div>

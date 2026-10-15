@@ -43,11 +43,11 @@ export default {
     // Version Check endpoint for Android In-App Update
     if (url.pathname === '/api/version' || url.pathname === '/api/check-update') {
       return new Response(JSON.stringify({
-        latestVersion: '1.5.1',
-        versionCode: 6,
-        downloadUrl: 'https://chat.nightstar.top/download/moyin-encchat-v1.5.1-debug.apk',
+        latestVersion: '1.5.2',
+        versionCode: 7,
+        downloadUrl: 'https://chat.nightstar.top/download/moyin-encchat-v1.5.2-debug.apk',
         githubDownloadUrl: 'https://github.com/hoshino-sys/EncChat/releases/latest',
-        releaseNotes: '1. 彻底解决开屏动画偶发触发两次的问题\n2. 进一步优化极简隐蔽性，剔除引人注目的提示\n3. 细节与性能微调优化',
+        releaseNotes: '1. 修复通知推送及小图标\n2. 剔除图片未解密时的多余提示文字\n3. 优化视觉与防窥隐匿体验',
         pubDate: '2026-10-15',
         forceUpdate: false,
       }), {
@@ -307,6 +307,20 @@ export class ChatRoom {
             } catch (err) {
               console.error('Failed to retrieve history:', err);
             }
+
+            // Push latest version metadata directly to connected client
+            try {
+              ws.send(JSON.stringify({
+                type: 'update_available',
+                latestVersion: '1.5.2',
+                versionCode: 7,
+                downloadUrl: 'https://chat.nightstar.top/download/moyin-encchat-v1.5.2-debug.apk',
+                githubDownloadUrl: 'https://github.com/hoshino-sys/EncChat/releases/latest',
+                releaseNotes: '1. 修复通知推送及小图标\n2. 剔除图片未解密时的多余提示文字\n3. 优化视觉与防窥隐匿体验',
+                pubDate: '2026-10-15',
+                forceUpdate: false,
+              }));
+            } catch {}
             break;
           }
 
