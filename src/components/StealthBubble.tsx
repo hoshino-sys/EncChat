@@ -174,7 +174,7 @@ export const StealthBubble: React.FC<StealthBubbleProps> = ({
                 ? 'text-[#6dbb89] opacity-95 font-medium animate-read-pulse'
                 : 'text-[#d6a75d] opacity-85'
             }`}
-            title={message.isRead ? '对方已解印查阅' : '对方尚未查阅'}
+            title={message.isRead ? '已读' : '未读'}
           >
             {message.isRead ? (
               <>
@@ -187,17 +187,6 @@ export const StealthBubble: React.FC<StealthBubbleProps> = ({
                 <span>未读</span>
               </>
             )}
-          </span>
-        )}
-
-        {/* Recipient: Show unviewed badge if message hasn't been deciphered yet */}
-        {!isSelf && !message.isRead && (
-          <span
-            className="inline-flex items-center gap-1 text-[9px] font-serif text-[#e05353] bg-[#e05353]/15 border border-[#e05353]/30 px-1.5 py-0.2 rounded font-medium shadow-[0_1px_6px_rgba(224,83,83,0.2)] animate-pulse"
-            title="尚未解密查阅"
-          >
-            <span className="w-1.5 h-1.5 rounded-full bg-[#e05353]" />
-            <span>未阅</span>
           </span>
         )}
       </div>
@@ -228,7 +217,7 @@ export const StealthBubble: React.FC<StealthBubbleProps> = ({
               <div className="animate-fade-in relative group/img">
                 {message.decryptionError ? (
                   <div className="px-6 py-8 text-center text-stone-400 text-xs font-serif tracking-widest bg-stone-900/60 rounded-xl">
-                    [图函解印有误]
+                    [图片加载失败]
                   </div>
                 ) : message.decryptedImage ? (
                   <div
@@ -242,20 +231,20 @@ export const StealthBubble: React.FC<StealthBubbleProps> = ({
                   >
                     <img
                       src={message.decryptedImage.data}
-                      alt="密函图印"
+                      alt="图片"
                       className="w-full h-auto object-cover rounded-xl border border-stone-700/50 hover:scale-[1.02] transition-transform duration-300"
                       draggable={false}
                     />
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
                       <div className="flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-black/70 text-stone-200 text-xs font-serif shadow-lg border border-white/20">
                         <Maximize2 className="w-3.5 h-3.5" />
-                        <span>全屏放大</span>
+                        <span>查看大图</span>
                       </div>
                     </div>
                   </div>
                 ) : (
                   <div className="w-[220px] h-[160px] flex items-center justify-center bg-stone-900/60 rounded-xl text-stone-400 text-xs font-serif animate-pulse">
-                    正在解印图函...
+                    正在加载...
                   </div>
                 )}
               </div>

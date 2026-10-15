@@ -45,7 +45,7 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({ versionInfo, onClose }
             <div>
               <div className="flex items-center space-x-2">
                 <span className="font-serif text-base font-bold text-stone-100 tracking-wide">
-                  墨隐 · 密道更迭
+                  墨隐 · 版本更新
                 </span>
                 <span className="text-[10px] px-2 py-0.5 rounded-full font-mono bg-[#a83232]/25 text-[#e05656] border border-[#a83232]/40">
                   新版已就绪

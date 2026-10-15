@@ -43,11 +43,11 @@ export default {
     // Version Check endpoint for Android In-App Update
     if (url.pathname === '/api/version' || url.pathname === '/api/check-update') {
       return new Response(JSON.stringify({
-        latestVersion: '1.5.0',
-        versionCode: 5,
-        downloadUrl: 'https://chat.nightstar.top/download/moyin-encchat-v1.5-debug.apk',
+        latestVersion: '1.5.1',
+        versionCode: 6,
+        downloadUrl: 'https://chat.nightstar.top/download/moyin-encchat-v1.5.1-debug.apk',
         githubDownloadUrl: 'https://github.com/hoshino-sys/EncChat/releases/latest',
-        releaseNotes: '1. PC 端支持按住 Ctrl + 鼠标右键透视查看密函与密图\n2. 彻底修复小夜星端已读未读回执同步问题\n3. 新增东方古典水墨晕染与朱砂落印开屏动画\n4. 新增气泡轻柔弹性滑入与全套流畅物理动效\n5. 支持应用内一键自动检测并更新安装',
+        releaseNotes: '1. 彻底解决开屏动画偶发触发两次的问题\n2. 进一步优化极简隐蔽性，剔除引人注目的提示\n3. 细节与性能微调优化',
         pubDate: '2026-10-15',
         forceUpdate: false,
       }), {

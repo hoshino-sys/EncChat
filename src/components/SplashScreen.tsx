@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 
 interface SplashScreenProps {
   onFinish: () => void;
@@ -6,6 +6,15 @@ interface SplashScreenProps {
 
 export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
   const [phase, setPhase] = useState<'bloom' | 'stamp' | 'fadeout'>('bloom');
+  const onFinishRef = useRef(onFinish);
+  onFinishRef.current = onFinish;
+  const finishedRef = useRef(false);
+
+  const handleFinish = () => {
+    if (finishedRef.current) return;
+    finishedRef.current = true;
+    onFinishRef.current?.();
+  };
 
   useEffect(() => {
     // 1. Water-ink bloom -> Stamp drop
@@ -16,28 +25,28 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
           navigator.vibrate(25);
         } catch {}
       }
-    }, 380);
+    }, 350);
 
     // 2. Stamp drop -> Fadeout
     const timer2 = setTimeout(() => {
       setPhase('fadeout');
-    }, 1200);
+    }, 1050);
 
     // 3. Complete and unmount
     const timer3 = setTimeout(() => {
-      onFinish();
-    }, 1500);
+      handleFinish();
+    }, 1300);
 
     return () => {
       clearTimeout(timer1);
       clearTimeout(timer2);
       clearTimeout(timer3);
     };
-  }, [onFinish]);
+  }, []);
 
   return (
     <div
-      onClick={onFinish}
+      onClick={handleFinish}
       className={`fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#07080a] select-none cursor-pointer transition-opacity duration-300 ease-out ${
         phase === 'fadeout' ? 'opacity-0 pointer-events-none' : 'opacity-100'
       }`}
@@ -82,24 +91,16 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
           <div className="absolute -inset-1 rounded-2xl border border-[#e5c158]/20 blur-[2px] pointer-events-none" />
         </div>
 
-        {/* Title & Motto */}
+        {/* Clean Seal Name */}
         <div
           className={`mt-6 text-center transition-all duration-700 delay-100 ease-out ${
             phase === 'bloom' ? 'opacity-0 translate-y-2' : 'opacity-100 translate-y-0'
           }`}
         >
-          <div className="font-serif text-lg font-bold tracking-[0.3em] text-stone-200 drop-shadow-md">
+          <div className="font-serif text-lg font-bold tracking-[0.3em] text-stone-300 drop-shadow-md">
             墨 隐
           </div>
-          <div className="mt-2 text-xs font-serif tracking-[0.25em] text-stone-500 font-light">
-            密道封缄 · 绝密私语
-          </div>
         </div>
-      </div>
-
-      {/* Skip Hint */}
-      <div className="absolute bottom-8 text-[11px] font-serif text-stone-600 tracking-wider">
-        轻触任意处即可跳过
       </div>
     </div>
   );

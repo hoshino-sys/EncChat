@@ -169,13 +169,13 @@ export const MemberListCard: React.FC<MemberListCardProps> = ({
           </span>
         </button>
 
-        {/* E2EE Info */}
-        <div className="px-1 text-[10px] font-serif text-[#6c7384] space-y-0.5">
+        {/* Minimal Safe Status */}
+        <div className="px-1 text-[10px] font-serif text-[#6c7384] flex items-center justify-between">
           <div className="flex items-center gap-1.5">
             <span className="w-1 h-1 rounded-full bg-[#5b9e7c]" />
-            <span>端对端加密 (AES-256-GCM)</span>
+            <span>连接安全</span>
           </div>
-          <div className="text-[9px] text-[#636a7b]">查阅：按住 Ctrl+右键 (电脑) / 轻触3秒 (手机)</div>
+          <span className="text-[9px] text-[#555b6a]">墨隐</span>
         </div>
       </div>
     </div>

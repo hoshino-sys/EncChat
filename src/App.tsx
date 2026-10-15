@@ -47,6 +47,8 @@ async function decryptMsgPayload(msg: ChatMessage, key: CryptoKey): Promise<Part
   }
 }
 
+let hasShownSplash = false;
+
 export const App: React.FC = () => {
   const [session, setSession] = useState<RoomSession | null>(() => {
     try {
@@ -100,9 +102,14 @@ export const App: React.FC = () => {
   } | null>(null);
 
   // Splash & In-App Update States
-  const [showSplash, setShowSplash] = useState(true);
+  const [showSplash, setShowSplash] = useState(() => !hasShownSplash);
   const [versionInfo, setVersionInfo] = useState<VersionInfo | null>(null);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
+
+  const handleFinishSplash = useCallback(() => {
+    hasShownSplash = true;
+    setShowSplash(false);
+  }, []);
 
   // Combination peek hook: Ctrl + RightClick
   const { isComboActive } = usePeekCombo();
@@ -557,8 +564,6 @@ export const App: React.FC = () => {
             onOpenMembers={() => setShowMobileMembers(true)}
             onReconnect={() => networkRef.current?.reconnect()}
             onLeaveRoom={handleLeaveRoom}
-            updateVersion={versionInfo?.latestVersion}
-            onOpenUpdate={() => setShowUpdateModal(true)}
           />
 
           {/* Body: Left Sidebar (Desktop) + Right Chat Stream */}
@@ -634,7 +639,7 @@ export const App: React.FC = () => {
       )}
 
       {/* Ink Splash Screen */}
-      {showSplash && <SplashScreen onFinish={() => setShowSplash(false)} />}
+      {showSplash && <SplashScreen onFinish={handleFinishSplash} />}
 
       {/* In-App Update Modal */}
       {showUpdateModal && versionInfo && (

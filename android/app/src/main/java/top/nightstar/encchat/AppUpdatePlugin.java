@@ -52,8 +52,8 @@ public class AppUpdatePlugin extends Plugin {
             Uri uri = Uri.parse(url);
 
             DownloadManager.Request request = new DownloadManager.Request(uri);
-            request.setTitle("墨隐 正在下载全新版本");
-            request.setDescription("墨隐 · 密道更迭更新中...");
+            request.setTitle("墨隐 正在下载更新");
+            request.setDescription("新版本下载中...");
             request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
             request.setMimeType("application/vnd.android.package-archive");
 

@@ -171,8 +171,8 @@ export const MobileMemberModal: React.FC<MobileMemberModalProps> = ({
             </span>
           </button>
 
-          <div className="text-[10px] font-serif text-[#787f90] text-center tracking-wide">
-            端对端加密 (AES-256-GCM) · 零知中继
+          <div className="text-[10px] font-serif text-[#6c7384] text-center tracking-wide">
+            墨隐 · 席位通信
           </div>
         </div>
       </div>
