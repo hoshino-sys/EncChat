@@ -4,7 +4,8 @@ compatibility_date = "2024-04-01"
 
 routes = [
   { pattern = "chat.nightstar.top/ws*", zone_name = "nightstar.top" },
-  { pattern = "chat.nightstar.top/api*", zone_name = "nightstar.top" }
+  { pattern = "chat.nightstar.top/api*", zone_name = "nightstar.top" },
+  { pattern = "chat.nightstar.top/download*", zone_name = "nightstar.top" }
 ]
 
 [durable_objects]

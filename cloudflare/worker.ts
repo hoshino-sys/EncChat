@@ -45,8 +45,8 @@ export default {
       return new Response(JSON.stringify({
         latestVersion: '1.5.2',
         versionCode: 7,
-        downloadUrl: 'https://chat.nightstar.top/download/moyin-encchat-v1.5.2-debug.apk',
-        githubDownloadUrl: 'https://github.com/hoshino-sys/EncChat/releases/latest',
+        downloadUrl: 'https://chat.nightstar.top/api/download/moyin-encchat-v1.5.2-debug.apk',
+        githubDownloadUrl: 'https://github.com/hoshino-sys/EncChat/releases/download/v1.5.2/moyin-encchat-v1.5.2-debug.apk',
         releaseNotes: '1. 修复通知推送及小图标\n2. 剔除图片未解密时的多余提示文字\n3. 优化视觉与防窥隐匿体验',
         pubDate: '2026-10-15',
         forceUpdate: false,
@@ -56,6 +56,37 @@ export default {
           ...CORS_HEADERS
         }
       });
+    }
+
+    // APK Download handler (proxies GitHub Releases asset directly with APK mime-type)
+    if (url.pathname.startsWith('/download/') || url.pathname.startsWith('/api/download/')) {
+      const fileName = url.pathname.split('/').pop() || 'moyin-encchat-v1.5.2-debug.apk';
+      const githubUrl = `https://github.com/hoshino-sys/EncChat/releases/download/v1.5.2/${fileName}`;
+
+      try {
+        const upstream = await fetch(githubUrl, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Android; Mobile)',
+          },
+          redirect: 'follow',
+        });
+
+        if (upstream.ok && upstream.body) {
+          return new Response(upstream.body, {
+            status: 200,
+            headers: {
+              'Content-Type': 'application/vnd.android.package-archive',
+              'Content-Disposition': `attachment; filename="${fileName}"`,
+              'Content-Length': upstream.headers.get('content-length') || '',
+              ...CORS_HEADERS,
+            },
+          });
+        }
+      } catch (err) {
+        console.error('Failed to proxy APK download:', err);
+      }
+
+      return Response.redirect(githubUrl, 302);
     }
 
     // Default room ID for the private chamber
@@ -314,8 +345,8 @@ export class ChatRoom {
                 type: 'update_available',
                 latestVersion: '1.5.2',
                 versionCode: 7,
-                downloadUrl: 'https://chat.nightstar.top/download/moyin-encchat-v1.5.2-debug.apk',
-                githubDownloadUrl: 'https://github.com/hoshino-sys/EncChat/releases/latest',
+                downloadUrl: 'https://chat.nightstar.top/api/download/moyin-encchat-v1.5.2-debug.apk',
+                githubDownloadUrl: 'https://github.com/hoshino-sys/EncChat/releases/download/v1.5.2/moyin-encchat-v1.5.2-debug.apk',
                 releaseNotes: '1. 修复通知推送及小图标\n2. 剔除图片未解密时的多余提示文字\n3. 优化视觉与防窥隐匿体验',
                 pubDate: '2026-10-15',
                 forceUpdate: false,

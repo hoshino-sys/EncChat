@@ -96,12 +96,16 @@ public class AppUpdatePlugin extends Plugin {
 
     private void installApk(Context context, File file) {
         try {
+            if (file == null || !file.exists() || file.length() < 100000) {
+                return;
+            }
+            file.setReadable(true, false);
             Intent install = new Intent(Intent.ACTION_VIEW);
             install.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            install.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                 Uri contentUri = FileProvider.getUriForFile(context, context.getPackageName() + ".fileprovider", file);
                 install.setDataAndType(contentUri, "application/vnd.android.package-archive");
-                install.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
             } else {
                 install.setDataAndType(Uri.fromFile(file), "application/vnd.android.package-archive");
             }
