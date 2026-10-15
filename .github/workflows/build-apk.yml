@@ -23,19 +23,24 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Set up Node.js 20
+      - name: Set up Node.js 22 (Capacitor 8 Requirement)
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
 
       - name: Install Node Dependencies
         run: npm ci
 
-      - name: Build Web App & Sync to Capacitor Android
+      - name: Build Web App
+        run: npm run build
+
+      - name: Sync Capacitor Android
+        run: npx cap sync android
+
+      - name: Accept Android Licenses
         run: |
-          npm run build
-          npx cap sync android
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
 
       - name: Build Android Debug APK
         run: |
