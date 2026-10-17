@@ -21,9 +21,14 @@ export class ChatNetworkService {
   private wsUrl: string = '';
   private reconnectTimer: number | null = null;
   private pingInterval: number | null = null;
+  private connectTimeoutTimer: number | null = null;
+  private pongTimeoutTimer: number | null = null;
   private isExplicitlyClosed: boolean = false;
   private broadcastChannel: BroadcastChannel | null = null;
   private pendingOutbox: any[] = [];
+  private reconnectAttempts: number = 0;
+  private lastMessageReceivedAt: number = Date.now();
+  private isListenersAttached: boolean = false;
 
   constructor(callbacks: WebSocketCallbacks) {
     this.callbacks = callbacks;
@@ -35,6 +40,8 @@ export class ChatNetworkService {
     this.userId = userId;
     this.userName = userName;
     this.authHash = authHash || '';
+
+    this.attachAppLifecycleListeners();
 
     // Initialize BroadcastChannel for instant local cross-tab / cross-window sync
     if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
@@ -64,6 +71,23 @@ export class ChatNetworkService {
   private initWebSocket() {
     if (this.isExplicitlyClosed) return;
 
+    // Clean up any existing connection attempt or timer
+    if (this.ws) {
+      try {
+        this.ws.onopen = null;
+        this.ws.onmessage = null;
+        this.ws.onerror = null;
+        this.ws.onclose = null;
+        this.ws.close();
+      } catch {}
+      this.ws = null;
+    }
+
+    if (this.connectTimeoutTimer) {
+      clearTimeout(this.connectTimeoutTimer);
+      this.connectTimeoutTimer = null;
+    }
+
     this.callbacks.onStatusChange('connecting');
 
     try {
@@ -78,11 +102,29 @@ export class ChatNetworkService {
 
       this.ws = new WebSocket(finalUrl);
 
+      // 5-second connection handshake timeout guard against hanging/half-open TCP
+      this.connectTimeoutTimer = window.setTimeout(() => {
+        if (this.ws && this.ws.readyState === WebSocket.CONNECTING) {
+          console.warn('[WebSocket] Connection handshake timed out (5s), retrying...');
+          try {
+            this.ws.close();
+          } catch {}
+        }
+      }, 5000);
+
       this.ws.onopen = () => {
+        if (this.connectTimeoutTimer) {
+          clearTimeout(this.connectTimeoutTimer);
+          this.connectTimeoutTimer = null;
+        }
+
         if (this.isExplicitlyClosed) {
           this.ws?.close();
           return;
         }
+
+        this.reconnectAttempts = 0;
+        this.lastMessageReceivedAt = Date.now();
         this.callbacks.onStatusChange('connected');
         this.startHeartbeat();
 
@@ -100,6 +142,7 @@ export class ChatNetworkService {
       };
 
       this.ws.onmessage = (event) => {
+        this.lastMessageReceivedAt = Date.now();
         try {
           const data = JSON.parse(event.data);
           this.handleIncomingRaw(data, false);
@@ -110,14 +153,17 @@ export class ChatNetworkService {
 
       this.ws.onerror = (err) => {
         console.warn('WebSocket connection error:', err);
-        // Do not immediately fail; onclose will handle reconnect
       };
 
       this.ws.onclose = () => {
+        if (this.connectTimeoutTimer) {
+          clearTimeout(this.connectTimeoutTimer);
+          this.connectTimeoutTimer = null;
+        }
         this.stopHeartbeat();
         if (!this.isExplicitlyClosed) {
           this.callbacks.onStatusChange('connecting');
-          // Reconnect with backoff
+          // Reconnect with fast backoff
           this.scheduleReconnect();
         } else {
           this.callbacks.onStatusChange('disconnected');
@@ -187,7 +233,11 @@ export class ChatNetworkService {
         break;
 
       case 'pong':
-        // Heartbeat received
+        this.lastMessageReceivedAt = Date.now();
+        if (this.pongTimeoutTimer) {
+          clearTimeout(this.pongTimeoutTimer);
+          this.pongTimeoutTimer = null;
+        }
         break;
 
       case 'auth_error':
@@ -231,16 +281,44 @@ export class ChatNetworkService {
     if (this.isExplicitlyClosed) return;
     if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
 
+    // Staged fast exponential backoff: 300ms, 800ms, 1500ms, 3000ms max
+    const delays = [300, 800, 1500, 3000];
+    const delay = delays[Math.min(this.reconnectAttempts, delays.length - 1)];
+    this.reconnectAttempts++;
+
     this.reconnectTimer = window.setTimeout(() => {
+      this.reconnectTimer = null;
       this.initWebSocket();
-    }, 3000);
+    }, delay);
   }
 
   private startHeartbeat() {
     this.stopHeartbeat();
     this.pingInterval = window.setInterval(() => {
+      if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+
+      // Zombie connection check: if no message received for > 20s, force reconnect
+      if (Date.now() - this.lastMessageReceivedAt > 20000) {
+        console.warn('[WebSocket] Zombie connection detected (idle > 20s), rebuilding socket...');
+        try {
+          this.ws.close();
+        } catch {}
+        return;
+      }
+
       this.sendRaw({ type: 'ping' });
-    }, 20000);
+
+      // Pong response watchdog: if server does not respond within 5s, reconnect
+      if (this.pongTimeoutTimer) clearTimeout(this.pongTimeoutTimer);
+      this.pongTimeoutTimer = window.setTimeout(() => {
+        if (this.ws && this.ws.readyState === WebSocket.OPEN && Date.now() - this.lastMessageReceivedAt > 12000) {
+          console.warn('[WebSocket] Pong heartbeat timeout (5s), rebuilding socket...');
+          try {
+            this.ws.close();
+          } catch {}
+        }
+      }, 5000);
+    }, 12000);
   }
 
   private stopHeartbeat() {
@@ -248,7 +326,42 @@ export class ChatNetworkService {
       clearInterval(this.pingInterval);
       this.pingInterval = null;
     }
+    if (this.pongTimeoutTimer) {
+      clearTimeout(this.pongTimeoutTimer);
+      this.pongTimeoutTimer = null;
+    }
   }
+
+  private attachAppLifecycleListeners() {
+    if (this.isListenersAttached) return;
+    if (typeof window !== 'undefined') {
+      window.addEventListener('online', this.handleVisibilityOrOnline);
+      document.addEventListener('visibilitychange', this.handleVisibilityOrOnline);
+      this.isListenersAttached = true;
+    }
+  }
+
+  private detachAppLifecycleListeners() {
+    if (!this.isListenersAttached) return;
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('online', this.handleVisibilityOrOnline);
+      document.removeEventListener('visibilitychange', this.handleVisibilityOrOnline);
+      this.isListenersAttached = false;
+    }
+  }
+
+  private handleVisibilityOrOnline = () => {
+    if (this.isExplicitlyClosed) return;
+    if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
+
+    if (!this.ws || this.ws.readyState === WebSocket.CLOSED || this.ws.readyState === WebSocket.CLOSING) {
+      console.log('[WebSocket] Network online or app resumed to foreground. Immediate reconnect...');
+      this.reconnect();
+    } else if (this.ws.readyState === WebSocket.OPEN) {
+      // Test socket health immediately
+      this.sendRaw({ type: 'ping' });
+    }
+  };
 
   public sendMessage(message: ChatMessage) {
     const packet = {
@@ -324,14 +437,24 @@ export class ChatNetworkService {
 
   public reconnect() {
     this.isExplicitlyClosed = false;
+    this.reconnectAttempts = 0;
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
     this.initWebSocket();
   }
 
   public disconnect() {
     this.isExplicitlyClosed = true;
+    this.detachAppLifecycleListeners();
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
       this.reconnectTimer = null;
+    }
+    if (this.connectTimeoutTimer) {
+      clearTimeout(this.connectTimeoutTimer);
+      this.connectTimeoutTimer = null;
     }
     this.stopHeartbeat();
 
@@ -342,7 +465,9 @@ export class ChatNetworkService {
         userId: this.userId,
         userName: this.userName,
       });
-      this.ws.close();
+      try {
+        this.ws.close();
+      } catch {}
       this.ws = null;
     }
 

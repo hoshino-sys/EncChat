@@ -43,11 +43,11 @@ export default {
     // Version Check endpoint for Android In-App Update
     if (url.pathname === '/api/version' || url.pathname === '/api/check-update') {
       return new Response(JSON.stringify({
-        latestVersion: '1.7.0',
-        versionCode: 10,
-        downloadUrl: 'https://chat.nightstar.top/api/download/moyin-encchat-v1.7.0-debug.apk',
-        githubDownloadUrl: 'https://github.com/hoshino-sys/EncChat/releases/download/v1.7.0/moyin-encchat-v1.7.0-debug.apk',
-        releaseNotes: '1. 修复移动端输入法键盘软弹起避让失效问题（视口高度动态自适应）\n2. 彻底消除聊天记录载入与切换时自上而下滚动动画（0ms瞬时锚定）\n3. 手机端顶栏极简东方禅意排版重构，次要功能收拢至席位抽屉',
+        latestVersion: '1.7.1',
+        versionCode: 11,
+        downloadUrl: 'https://chat.nightstar.top/api/download/moyin-encchat-v1.7.1-debug.apk',
+        githubDownloadUrl: 'https://github.com/hoshino-sys/EncChat/releases/download/v1.7.1/moyin-encchat-v1.7.1-debug.apk',
+        releaseNotes: '1. 暂离按钮全局常驻，席位抽屉支持平滑滑动与淡入淡出进退场动画\n2. 大图全屏查看支持平滑缩放展开与收回动画\n3. 历史消息时间显示增加“昨天/月日/具体日期”自适应\n4. 己方视角用户名靠最右展示，身份标签位于用户名左侧\n5. 输入框文稿速览改为点击显示 3 秒并附带倒计时指示\n6. 优化网络连接与快速重连机制，秒级唤醒恢复',
         pubDate: '2026-10-17',
         forceUpdate: false,
       }), {
@@ -60,9 +60,9 @@ export default {
 
     // APK Download handler (proxies GitHub Releases asset directly with APK mime-type)
     if (url.pathname.startsWith('/download/') || url.pathname.startsWith('/api/download/')) {
-      const fileName = url.pathname.split('/').pop() || 'moyin-encchat-v1.7.0-debug.apk';
+      const fileName = url.pathname.split('/').pop() || 'moyin-encchat-v1.7.1-debug.apk';
       const tagMatch = fileName.match(/v(\d+\.\d+\.\d+)/);
-      const versionTag = tagMatch ? `v${tagMatch[1]}` : 'v1.7.0';
+      const versionTag = tagMatch ? `v${tagMatch[1]}` : 'v1.7.1';
       const githubUrl = `https://github.com/hoshino-sys/EncChat/releases/download/${versionTag}/${fileName}`;
 
       try {
@@ -345,11 +345,11 @@ export class ChatRoom {
             try {
               ws.send(JSON.stringify({
                 type: 'update_available',
-                latestVersion: '1.5.3',
-                versionCode: 8,
-                downloadUrl: 'https://chat.nightstar.top/api/download/moyin-encchat-v1.5.3-debug.apk',
-                githubDownloadUrl: 'https://github.com/hoshino-sys/EncChat/releases/download/v1.5.3/moyin-encchat-v1.5.3-debug.apk',
-                releaseNotes: '1. 修复横幅通知（Heads-up）最高优先级调度\n2. 新增信函通知与横幅状态自检面板\n3. 新增一键直达系统通知设置与测试通知',
+                latestVersion: '1.7.1',
+                versionCode: 11,
+                downloadUrl: 'https://chat.nightstar.top/api/download/moyin-encchat-v1.7.1-debug.apk',
+                githubDownloadUrl: 'https://github.com/hoshino-sys/EncChat/releases/download/v1.7.1/moyin-encchat-v1.7.1-debug.apk',
+                releaseNotes: '1. 暂离按钮全局常驻，席位抽屉支持平滑滑动与淡入淡出进退场动画\n2. 大图全屏查看支持平滑缩放展开与收回动画\n3. 历史消息时间显示增加“昨天/月日/具体日期”自适应\n4. 己方视角用户名靠最右展示，身份标签位于用户名左侧\n5. 输入框文稿速览改为点击显示 3 秒并附带倒计时指示\n6. 优化网络连接与快速重连机制，秒级唤醒恢复',
                 pubDate: '2026-10-17',
                 forceUpdate: false,
               }));

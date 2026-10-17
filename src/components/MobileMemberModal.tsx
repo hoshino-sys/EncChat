@@ -25,6 +25,34 @@ export const MobileMemberModal: React.FC<MobileMemberModalProps> = ({
   onLeaveRoom,
   onClose,
 }) => {
+  const [isMounted, setIsMounted] = React.useState(false);
+  const [isClosing, setIsClosing] = React.useState(false);
+
+  React.useEffect(() => {
+    const raf = requestAnimationFrame(() => {
+      setIsMounted(true);
+    });
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
+  const handleClose = () => {
+    if (isClosing) return;
+    setIsClosing(true);
+    setTimeout(() => {
+      onClose();
+    }, 280);
+  };
+
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        handleClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   const isYeXingOnline =
     (currentUser === '夜星' && connectionState === 'connected') ||
     peers.some((p) => p.name === '夜星');
@@ -51,14 +79,24 @@ export const MobileMemberModal: React.FC<MobileMemberModalProps> = ({
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-[#0A0B0D]/85 backdrop-blur-xl animate-fade-in select-none">
+    <div
+      className={`fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-[#0A0B0D]/85 backdrop-blur-xl select-none transition-opacity duration-300 ease-out ${
+        isMounted && !isClosing ? 'opacity-100' : 'opacity-0 pointer-events-none'
+      }`}
+    >
       <div
         className="fixed inset-0"
-        onClick={onClose}
+        onClick={handleClose}
         aria-hidden="true"
       />
 
-      <div className="relative w-full sm:max-w-sm rounded-t-[12px] sm:rounded-[8px] bg-[#141619]/95 p-6 pb-[calc(env(safe-area-inset-bottom,0px)+1.5rem)] border border-[rgba(230,228,221,0.08)] shadow-[0_24px_70px_rgba(0,0,0,0.9)] z-10 space-y-5">
+      <div
+        className={`relative w-full sm:max-w-sm rounded-t-[14px] sm:rounded-[8px] bg-[#141619]/95 p-6 pb-[calc(env(safe-area-inset-bottom,0px)+1.5rem)] border border-[rgba(230,228,221,0.08)] shadow-[0_24px_70px_rgba(0,0,0,0.9)] z-10 space-y-5 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+          isMounted && !isClosing
+            ? 'translate-y-0 opacity-100 scale-100'
+            : 'translate-y-full sm:translate-y-8 opacity-0 sm:scale-95'
+        }`}
+      >
         {/* Header */}
         <div className="flex items-center justify-between pb-3.5 border-b border-[rgba(230,228,221,0.08)]">
           <div className="flex items-center gap-2">
@@ -84,7 +122,7 @@ export const MobileMemberModal: React.FC<MobileMemberModalProps> = ({
 
             <button
               type="button"
-              onClick={onClose}
+              onClick={handleClose}
               className="p-1.5 rounded-[4px] text-[#6E737B] hover:text-[#E6E4DD] hover:bg-[rgba(230,228,221,0.06)] transition-all cursor-pointer"
             >
               <X className="w-4 h-4" strokeWidth={1.8} />
@@ -174,8 +212,10 @@ export const MobileMemberModal: React.FC<MobileMemberModalProps> = ({
             <button
               type="button"
               onClick={() => {
-                onClose();
-                onOpenNotificationModal();
+                handleClose();
+                setTimeout(() => {
+                  onOpenNotificationModal();
+                }, 280);
               }}
               className="w-full py-2.5 px-3.5 rounded-[4px] font-sans text-xs transition-all duration-200 flex items-center justify-between cursor-pointer bg-[#141619] hover:bg-[#1e2227] border border-[rgba(230,228,221,0.08)] text-[#E6E4DD]"
             >
@@ -192,7 +232,7 @@ export const MobileMemberModal: React.FC<MobileMemberModalProps> = ({
             type="button"
             onClick={() => {
               onToggleAfk();
-              onClose();
+              handleClose();
             }}
             className={`w-full py-2.5 px-3.5 rounded-[4px] font-sans text-xs transition-all duration-200 flex items-center justify-between cursor-pointer ${
               isAfkLocked
@@ -218,7 +258,7 @@ export const MobileMemberModal: React.FC<MobileMemberModalProps> = ({
             <button
               type="button"
               onClick={() => {
-                onClose();
+                handleClose();
                 onLeaveRoom();
               }}
               className="w-full py-2.5 px-3.5 rounded-[4px] font-sans text-xs transition-all duration-200 flex items-center justify-between cursor-pointer bg-[#141619] hover:bg-[#9E2A2B]/15 border border-[rgba(230,228,221,0.08)] hover:border-[#9E2A2B]/40 text-[#6E737B] hover:text-[#d15c5c]"

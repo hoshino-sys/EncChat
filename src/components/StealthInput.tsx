@@ -30,7 +30,33 @@ export const StealthInput: React.FC<StealthInputProps> = ({
   const overlayRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const maskTimerRef = useRef<number | null>(null);
+  const peekTimerRef = useRef<number | null>(null);
   const isComposingRef = useRef(false);
+
+  // Click to peek for 3 seconds instead of long-press
+  const handleTogglePeek = () => {
+    if (isPeeking) {
+      if (peekTimerRef.current) {
+        clearTimeout(peekTimerRef.current);
+        peekTimerRef.current = null;
+      }
+      setIsPeeking(false);
+      return;
+    }
+
+    setIsPeeking(true);
+    if (peekTimerRef.current) clearTimeout(peekTimerRef.current);
+    peekTimerRef.current = window.setTimeout(() => {
+      setIsPeeking(false);
+      peekTimerRef.current = null;
+    }, 3000);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (peekTimerRef.current) clearTimeout(peekTimerRef.current);
+    };
+  }, []);
 
   // Sync scroll between textarea and overlay
   const handleScroll = () => {
@@ -337,20 +363,22 @@ export const StealthInput: React.FC<StealthInputProps> = ({
             <ImageIcon className="w-4 h-4" strokeWidth={1.8} />
           </button>
 
-          {/* Peek Text Button */}
+          {/* Peek Text Button: Click to show for 3 seconds */}
           {text.length > 0 && (
             <button
               type="button"
-              onMouseDown={() => setIsPeeking(true)}
-              onMouseUp={() => setIsPeeking(false)}
-              onMouseLeave={() => setIsPeeking(false)}
-              onTouchStart={() => setIsPeeking(true)}
-              onTouchEnd={() => setIsPeeking(false)}
-              onTouchCancel={() => setIsPeeking(false)}
-              className="p-2 rounded-[4px] text-[#6E737B] hover:text-[#E6E4DD] hover:bg-[rgba(230,228,221,0.06)] transition-all cursor-pointer"
-              title="按住速览已输入文稿"
+              onClick={handleTogglePeek}
+              className="relative p-2 rounded-[4px] text-[#6E737B] hover:text-[#E6E4DD] hover:bg-[rgba(230,228,221,0.06)] transition-all cursor-pointer"
+              title={isPeeking ? '点击提前隐匿' : '点击阅览文稿 3 秒'}
             >
-              {isPeeking ? <EyeOff className="w-4 h-4 text-[#E6E4DD]" strokeWidth={1.5} /> : <Eye className="w-4 h-4" strokeWidth={1.5} />}
+              {isPeeking ? (
+                <EyeOff className="w-4 h-4 text-[#d15c5c]" strokeWidth={1.5} />
+              ) : (
+                <Eye className="w-4 h-4" strokeWidth={1.5} />
+              )}
+              {isPeeking && (
+                <span className="absolute bottom-0.5 left-1 right-1 h-[1.5px] bg-[#9E2A2B] rounded-full animate-countdown-3s pointer-events-none" />
+              )}
             </button>
           )}
 

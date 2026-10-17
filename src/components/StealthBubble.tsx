@@ -63,12 +63,33 @@ export const StealthBubble: React.FC<StealthBubbleProps> = ({
     }
   }, [isRevealed, isSelf, message.isRead, message.id, onMarkRead]);
 
-  // Format time (HH:mm) with lining numbers
+  // Format time with Yesterday / Specific Date support
   const timeString = useMemo(() => {
     const date = new Date(message.timestamp);
+    const now = new Date();
     const h = date.getHours().toString().padStart(2, '0');
     const m = date.getMinutes().toString().padStart(2, '0');
-    return `${h}:${m}`;
+    const timeOnly = `${h}:${m}`;
+
+    const isToday =
+      date.getFullYear() === now.getFullYear() &&
+      date.getMonth() === now.getMonth() &&
+      date.getDate() === now.getDate();
+    if (isToday) return timeOnly;
+
+    const yesterday = new Date(now);
+    yesterday.setDate(now.getDate() - 1);
+    const isYesterday =
+      date.getFullYear() === yesterday.getFullYear() &&
+      date.getMonth() === yesterday.getMonth() &&
+      date.getDate() === yesterday.getDate();
+    if (isYesterday) return `昨天 ${timeOnly}`;
+
+    if (date.getFullYear() === now.getFullYear()) {
+      return `${date.getMonth() + 1}月${date.getDate()}日 ${timeOnly}`;
+    }
+
+    return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日 ${timeOnly}`;
   }, [message.timestamp]);
 
   // Exact 1-to-1 Esoteric Rune Masking
@@ -136,45 +157,69 @@ export const StealthBubble: React.FC<StealthBubbleProps> = ({
     >
       {/* Sender info, time & Read/Unread status */}
       <div className="flex items-center gap-2 px-1.5 mb-1.5 text-[11px] font-sans tracking-wide">
-        <div className="flex items-center gap-1.5">
-          <span className={`font-serif tracking-[0.12em] font-medium ${isYeXing ? 'text-name-yexing' : 'text-name-xiaoyexing'}`}>
-            {message.senderName}
-          </span>
-          <span
-            className={`text-[9px] px-1.5 py-0.2 rounded-[3px] font-serif ${
-              isYeXing ? 'badge-admin' : 'badge-user'
-            }`}
-          >
-            {isYeXing ? '管理员' : '用户'}
-          </span>
-        </div>
+        {isSelf ? (
+          <>
+            {/* Sender: Show Read / Unread status (竹青玉色 for read) */}
+            <span
+              className={`inline-flex items-center gap-0.5 text-[10px] font-sans tracking-wider transition-colors duration-200 ${
+                message.isRead
+                  ? 'text-[#4E7A6B] font-medium'
+                  : 'text-[#6E737B]'
+              }`}
+              title={message.isRead ? '已读' : '未读'}
+            >
+              {message.isRead ? (
+                <>
+                  <CheckCheck className="w-3 h-3 text-[#4E7A6B]" strokeWidth={2.2} />
+                  <span>已读</span>
+                </>
+              ) : (
+                <>
+                  <Check className="w-2.5 h-2.5 text-[#6E737B]" strokeWidth={2} />
+                  <span>未读</span>
+                </>
+              )}
+            </span>
 
-        <span className="text-[10px] font-mono lining-nums tabular-nums text-[#6E737B]">
-          {timeString}
-        </span>
+            {/* Time */}
+            <span className="text-[10px] font-mono lining-nums tabular-nums text-[#6E737B]">
+              {timeString}
+            </span>
 
-        {/* Sender: Show Read / Unread status (竹青玉色 for read) */}
-        {isSelf && (
-          <span
-            className={`inline-flex items-center gap-0.5 text-[10px] font-sans tracking-wider transition-colors duration-200 ${
-              message.isRead
-                ? 'text-[#4E7A6B] font-medium'
-                : 'text-[#6E737B]'
-            }`}
-            title={message.isRead ? '已读' : '未读'}
-          >
-            {message.isRead ? (
-              <>
-                <CheckCheck className="w-3 h-3 text-[#4E7A6B]" strokeWidth={2.2} />
-                <span>已读</span>
-              </>
-            ) : (
-              <>
-                <Check className="w-2.5 h-2.5 text-[#6E737B]" strokeWidth={2} />
-                <span>未读</span>
-              </>
-            )}
-          </span>
+            {/* Self User: Role badge on left, Username on rightmost */}
+            <div className="flex items-center gap-1.5">
+              <span
+                className={`text-[9px] px-1.5 py-0.2 rounded-[3px] font-serif ${
+                  isYeXing ? 'badge-admin' : 'badge-user'
+                }`}
+              >
+                {isYeXing ? '管理员' : '用户'}
+              </span>
+              <span className={`font-serif tracking-[0.12em] font-medium ${isYeXing ? 'text-name-yexing' : 'text-name-xiaoyexing'}`}>
+                {message.senderName}
+              </span>
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Peer User: Role badge on left, Username on right, then Time */}
+            <div className="flex items-center gap-1.5">
+              <span
+                className={`text-[9px] px-1.5 py-0.2 rounded-[3px] font-serif ${
+                  isYeXing ? 'badge-admin' : 'badge-user'
+                }`}
+              >
+                {isYeXing ? '管理员' : '用户'}
+              </span>
+              <span className={`font-serif tracking-[0.12em] font-medium ${isYeXing ? 'text-name-yexing' : 'text-name-xiaoyexing'}`}>
+                {message.senderName}
+              </span>
+            </div>
+
+            <span className="text-[10px] font-mono lining-nums tabular-nums text-[#6E737B]">
+              {timeString}
+            </span>
+          </>
         )}
       </div>
 

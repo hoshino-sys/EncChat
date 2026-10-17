@@ -106,66 +106,28 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
           </button>
         )}
 
-        {/* Desktop-only: AFK Privacy Lock Button */}
+        {/* AFK Privacy Lock Button (Always visible on mobile & desktop - 暂离不要收起来) */}
         <button
           type="button"
           onClick={onToggleAfk}
-          className={`hidden md:flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-[4px] text-xs font-serif transition-all duration-200 cursor-pointer ${
+          className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 rounded-[4px] text-xs font-serif transition-all duration-200 cursor-pointer shrink-0 ${
             isAfkLocked
-              ? 'bg-[#9E2A2B]/20 border border-[#9E2A2B]/40 text-[#E6E4DD] hover:bg-[#9E2A2B]/30 shadow-[0_2px_10px_rgba(158,42,43,0.25)]'
+              ? 'bg-[#9E2A2B]/20 border border-[#9E2A2B]/40 text-[#d15c5c] hover:bg-[#9E2A2B]/30 shadow-[0_2px_10px_rgba(158,42,43,0.25)]'
               : 'bg-[#141619]/60 hover:bg-[#141619] border border-[rgba(230,228,221,0.08)] text-[#6E737B] hover:text-[#E6E4DD]'
           }`}
-          title={isAfkLocked ? '点击或按 Esc / Alt+L 解除暂离' : '点击或按 Esc / Alt+L 立即隐匿锁定'}
+          title={isAfkLocked ? '点击解除暂离' : '点击立即暂离隐匿'}
         >
           {isAfkLocked ? (
             <>
               <Lock className="w-3.5 h-3.5 text-[#d15c5c]" strokeWidth={1.8} />
-              <span className="tracking-wide">已暂离</span>
+              <span className="tracking-wide text-[11px] sm:text-xs">已暂离</span>
             </>
           ) : (
             <>
               <Unlock className="w-3.5 h-3.5 text-[#6E737B]" strokeWidth={1.8} />
-              <span className="tracking-wide">暂离</span>
+              <span className="tracking-wide text-[11px] sm:text-xs">暂离</span>
             </>
           )}
-        </button>
-
-        {/* Mobile AFK Indicator (only visible when actively locked) */}
-        {isAfkLocked && (
-          <button
-            type="button"
-            onClick={onToggleAfk}
-            className="flex md:hidden items-center gap-1 px-2 py-1 rounded-[4px] bg-[#9E2A2B]/20 border border-[#9E2A2B]/40 text-[#d15c5c] text-xs font-serif active:scale-95"
-            title="点击解除暂离"
-          >
-            <Lock className="w-3 h-3 text-[#d15c5c]" strokeWidth={1.8} />
-            <span className="text-[10px]">已暂离</span>
-          </button>
-        )}
-
-        {/* User Identity Badge (Visible on all viewports, exact colors preserved) */}
-        <div className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-[4px] bg-[#141619]/60 border border-[rgba(230,228,221,0.08)] text-xs font-serif shrink-0">
-          <span className={`truncate font-medium ${userName === '夜星' ? 'text-name-yexing' : 'text-name-xiaoyexing'}`}>
-            {userName}
-          </span>
-          <span
-            className={`text-[9px] px-1.5 py-0.5 rounded-[3px] font-serif ${
-              isAdmin
-                ? 'badge-admin'
-                : 'badge-user'
-            }`}
-          >
-            {isAdmin ? '管理员' : '用户'}
-          </span>
-        </div>
-
-        {/* Desktop-only: Logout Button */}
-        <button
-          onClick={onLeaveRoom}
-          className="hidden md:flex p-1.5 rounded-[4px] text-[#6E737B] hover:text-[#d15c5c] hover:bg-[#141619] transition-all cursor-pointer"
-          title="离席退室"
-        >
-          <LogOut className="w-4 h-4" strokeWidth={1.6} />
         </button>
 
         {/* Mobile: Seat Roster & Drawer Button */}
@@ -181,6 +143,31 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
           </span>
           <span className="text-[11px] text-[#6E737B]">席</span>
         </button>
+
+        {/* Desktop-only: Logout Button */}
+        <button
+          onClick={onLeaveRoom}
+          className="hidden md:flex p-1.5 rounded-[4px] text-[#6E737B] hover:text-[#d15c5c] hover:bg-[#141619] transition-all cursor-pointer"
+          title="离席退室"
+        >
+          <LogOut className="w-4 h-4" strokeWidth={1.6} />
+        </button>
+
+        {/* User Identity Badge: Rightmost element, Admin tag on left of username */}
+        <div className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-[4px] bg-[#141619]/60 border border-[rgba(230,228,221,0.08)] text-xs font-serif shrink-0">
+          <span
+            className={`text-[9px] px-1.5 py-0.5 rounded-[3px] font-serif ${
+              isAdmin
+                ? 'badge-admin'
+                : 'badge-user'
+            }`}
+          >
+            {isAdmin ? '管理员' : '用户'}
+          </span>
+          <span className={`truncate font-medium ${userName === '夜星' ? 'text-name-yexing' : 'text-name-xiaoyexing'}`}>
+            {userName}
+          </span>
+        </div>
       </div>
     </header>
   );

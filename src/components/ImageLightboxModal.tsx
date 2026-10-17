@@ -18,17 +18,30 @@ export const ImageLightboxModal: React.FC<ImageLightboxModalProps> = ({
 }) => {
   const [scale, setScale] = useState(1);
   const [rotation, setRotation] = useState(0);
+  const [isMounted, setIsMounted] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
+
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => setIsMounted(true));
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
+  const handleClose = () => {
+    if (isClosing) return;
+    setIsClosing(true);
+    setTimeout(onClose, 250);
+  };
 
   // Close on Escape key
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        onClose();
+        handleClose();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onClose]);
+  }, []);
 
   const handleDownload = () => {
     try {
@@ -54,8 +67,10 @@ export const ImageLightboxModal: React.FC<ImageLightboxModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#0A0B0D]/95 backdrop-blur-md select-none animate-fadeIn"
-      onClick={onClose}
+      className={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#0A0B0D]/95 backdrop-blur-md select-none transition-opacity duration-250 ease-out ${
+        isMounted && !isClosing ? 'opacity-100' : 'opacity-0 pointer-events-none'
+      }`}
+      onClick={handleClose}
     >
       {/* Top action bar */}
       <div
@@ -108,7 +123,7 @@ export const ImageLightboxModal: React.FC<ImageLightboxModalProps> = ({
           </button>
           <div className="w-[1px] h-4 bg-[rgba(230,228,221,0.1)] mx-1" />
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="p-2 rounded-[4px] hover:bg-[rgba(230,228,221,0.08)] text-[#6E737B] hover:text-[#E6E4DD] transition-colors cursor-pointer"
             title="关闭 (Esc)"
           >
@@ -117,22 +132,26 @@ export const ImageLightboxModal: React.FC<ImageLightboxModalProps> = ({
         </div>
       </div>
 
-      {/* Main image container */}
+      {/* Main image container with smooth scale-up/scale-down animation */}
       <div
         className="flex-1 w-full flex items-center justify-center p-4 overflow-hidden"
         onClick={handleResetZoom}
       >
         <div
-          className="relative transition-transform duration-200 ease-out cursor-zoom-out"
+          className={`relative cursor-zoom-out ${
+            isMounted && !isClosing ? 'opacity-100' : 'opacity-0'
+          }`}
           style={{
-            transform: `scale(${scale}) rotate(${rotation}deg)`,
+            transform: `scale(${scale * (isMounted && !isClosing ? 1 : 0.88)}) rotate(${rotation}deg)`,
+            transition: 'transform 300ms cubic-bezier(0.16, 1, 0.3, 1), opacity 250ms ease-out',
+            transformOrigin: 'center center',
           }}
           onClick={(e) => e.stopPropagation()}
         >
           <img
             src={image.data}
             alt="解密密图"
-            className="max-h-[82vh] max-w-[92vw] object-contain rounded-[4px] shadow-2xl border border-[rgba(230,228,221,0.1)] pointer-events-auto"
+            className="max-h-[82vh] max-w-[92vw] object-contain rounded-[6px] shadow-2xl border border-[rgba(230,228,221,0.12)] pointer-events-auto select-none"
             draggable={false}
           />
         </div>

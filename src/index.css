@@ -165,11 +165,12 @@
 
 /* 3 秒倒计时流光细线 */
 @keyframes countdownDrain {
-  from { width: 100%; }
-  to { width: 0%; }
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
 }
 
 .animate-countdown-3s {
+  transform-origin: left;
   animation: countdownDrain 3s linear forwards;
 }
 
