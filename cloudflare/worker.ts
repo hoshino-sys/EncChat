@@ -43,11 +43,11 @@ export default {
     // Version Check endpoint for Android In-App Update
     if (url.pathname === '/api/version' || url.pathname === '/api/check-update') {
       return new Response(JSON.stringify({
-        latestVersion: '1.5.3',
-        versionCode: 8,
-        downloadUrl: 'https://chat.nightstar.top/api/download/moyin-encchat-v1.5.3-debug.apk',
-        githubDownloadUrl: 'https://github.com/hoshino-sys/EncChat/releases/download/v1.5.3/moyin-encchat-v1.5.3-debug.apk',
-        releaseNotes: '1. 修复横幅通知（Heads-up）最高优先级调度\n2. 新增信函通知与横幅状态自检面板\n3. 新增一键直达系统通知设置与测试通知',
+        latestVersion: '1.6.0',
+        versionCode: 9,
+        downloadUrl: 'https://chat.nightstar.top/api/download/moyin-encchat-v1.6.0-debug.apk',
+        githubDownloadUrl: 'https://github.com/hoshino-sys/EncChat/releases/download/v1.6.0/moyin-encchat-v1.6.0-debug.apk',
+        releaseNotes: '1. 全新东方克制水墨极简美学重构\n2. 席位与角色专属配色（夜星红、小夜星金、管理员金、用户蓝）\n3. 优化水墨氤氲动效与朱砂方印交互',
         pubDate: '2026-10-17',
         forceUpdate: false,
       }), {
@@ -60,9 +60,9 @@ export default {
 
     // APK Download handler (proxies GitHub Releases asset directly with APK mime-type)
     if (url.pathname.startsWith('/download/') || url.pathname.startsWith('/api/download/')) {
-      const fileName = url.pathname.split('/').pop() || 'moyin-encchat-v1.5.3-debug.apk';
+      const fileName = url.pathname.split('/').pop() || 'moyin-encchat-v1.6.0-debug.apk';
       const tagMatch = fileName.match(/v(\d+\.\d+\.\d+)/);
-      const versionTag = tagMatch ? `v${tagMatch[1]}` : 'v1.5.3';
+      const versionTag = tagMatch ? `v${tagMatch[1]}` : 'v1.6.0';
       const githubUrl = `https://github.com/hoshino-sys/EncChat/releases/download/${versionTag}/${fileName}`;
 
       try {

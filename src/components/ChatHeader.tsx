@@ -29,47 +29,48 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
   onReconnect,
   onLeaveRoom,
 }) => {
+  // Connection dot colors aligned to restrained palette (竹青玉色 connected, 朱砂红 disconnected)
   const statusDotColor = {
-    connected: 'bg-[#5b9e7c] shadow-[0_0_6px_#5b9e7c]',
-    connecting: 'bg-[#b8924b] animate-pulse',
-    disconnected: 'bg-[#ab3838]',
-    error: 'bg-[#ab3838]',
+    connected: 'bg-[#4E7A6B] shadow-[0_0_6px_#4E7A6B]',
+    connecting: 'bg-[#9E2A2B]/70 animate-pulse',
+    disconnected: 'bg-[#9E2A2B]',
+    error: 'bg-[#9E2A2B]',
   }[connectionState];
 
   const isAdmin = userName === '夜星' || userRole === 'admin';
 
   return (
-    <header className="w-full shrink-0 px-3 sm:px-6 pt-[calc(env(safe-area-inset-top,0px)+0.625rem)] pb-2.5 white-glass border-b border-white/10 flex items-center justify-between select-none z-20">
+    <header className="w-full shrink-0 px-3 sm:px-6 pt-[calc(env(safe-area-inset-top,0px)+0.625rem)] pb-2.5 bg-[#141619]/80 backdrop-blur-md border-b border-[rgba(230,228,221,0.08)] flex items-center justify-between select-none z-20">
       {/* Left: Brand, Room & Members Trigger */}
       <div className="flex items-center gap-2 sm:gap-3">
-        {/* Brand Seal */}
+        {/* Brand Seal (4px micro-rounded Cinnabar Seal) */}
         <div className="flex items-center gap-2">
-          <span className="w-6 h-6 rounded-md seal-bg seal-red flex items-center justify-center font-serif text-xs font-bold shadow-[0_2px_8px_rgba(171,56,56,0.25)]">
+          <span className="w-6 h-6 rounded-[4px] bg-[#9E2A2B] text-[#E6E4DD] border border-[#B83B2B]/40 flex items-center justify-center font-serif text-xs font-bold shadow-[0_1px_8px_rgba(158,42,43,0.3)]">
             墨
           </span>
-          <span className="font-serif tracking-widest text-sm text-[#ffffff] font-medium hidden sm:inline">
+          <span className="font-serif-zen text-sm tracking-[0.25em] text-[#E6E4DD] font-medium hidden sm:inline">
             墨隐
           </span>
         </div>
 
         {/* Room Token */}
-        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white/[0.04] border border-white/10 text-xs font-serif text-[#d6d0c2]">
-          <span className="font-serif text-[#ffffff] font-medium tracking-wide">
+        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-[4px] bg-[#141619]/60 border border-[rgba(230,228,221,0.08)] text-xs font-serif tracking-[0.15em] text-[#E6E4DD]">
+          <span className="font-serif font-medium">
             {roomId}
           </span>
         </div>
 
-        {/* Online Status & Seat Button (Accessible on Mobile and Desktop) */}
+        {/* Online Status & Seat Button */}
         <button
           type="button"
           onClick={onOpenMembers}
-          className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white/[0.04] hover:bg-white/[0.09] border border-white/10 text-xs font-serif text-[#c5cbe0] transition-all cursor-pointer shadow-[0_2px_8px_rgba(0,0,0,0.15)] active:scale-95"
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded-[4px] bg-[#141619]/60 hover:bg-[#141619] border border-[rgba(230,228,221,0.08)] text-xs font-serif text-[#6E737B] hover:text-[#E6E4DD] transition-all cursor-pointer active:scale-95"
           title="点击查看席位成员名册与在线状态"
         >
-          <Users className="w-3.5 h-3.5 text-[#9da5b8]" strokeWidth={1.8} />
+          <Users className="w-3.5 h-3.5 text-[#6E737B]" strokeWidth={1.8} />
           <span className="hidden xs:inline">在席</span>
           <span className={`w-1.5 h-1.5 rounded-full ${statusDotColor}`} />
-          <span className="font-serif text-[11px] lining-nums tabular-nums font-mono text-[#ffffff]">
+          <span className="font-mono text-[11px] lining-nums tabular-nums text-[#E6E4DD]">
             {peerCount}
           </span>
         </button>
@@ -78,7 +79,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
           <button
             type="button"
             onClick={onReconnect}
-            className="text-[10px] text-amber-400/80 hover:text-amber-300 font-serif underline underline-offset-2 ml-1"
+            className="text-[10px] text-[#9E2A2B] hover:text-[#B83B2B] font-serif underline underline-offset-2 ml-1 cursor-pointer"
           >
             重连
           </button>
@@ -92,10 +93,10 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
           <button
             type="button"
             onClick={onOpenNotificationModal}
-            className="flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-xs font-serif text-[#d8d4c8] hover:text-[#e5c158] transition-all cursor-pointer"
+            className="flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-[4px] bg-[#141619]/60 hover:bg-[#141619] border border-[rgba(230,228,221,0.08)] text-xs font-serif text-[#6E737B] hover:text-[#E6E4DD] transition-all cursor-pointer"
             title="信函通知与悬浮横幅状态诊断及测试"
           >
-            <Bell className="w-3.5 h-3.5 text-[#e5c158]" strokeWidth={1.8} />
+            <Bell className="w-3.5 h-3.5 text-[#E6E4DD]/80" strokeWidth={1.8} />
             <span className="hidden sm:inline">通知</span>
           </button>
         )}
@@ -104,36 +105,36 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
         <button
           type="button"
           onClick={onToggleAfk}
-          className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-xl text-xs font-serif transition-all duration-200 cursor-pointer ${
+          className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-[4px] text-xs font-serif transition-all duration-200 cursor-pointer ${
             isAfkLocked
-              ? 'bg-[#ab3838]/20 border border-[#ab3838]/40 text-[#ffb0b0] hover:bg-[#ab3838]/30 shadow-[0_2px_12px_rgba(171,56,56,0.3)]'
-              : 'bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-[#d8d4c8] hover:text-white'
+              ? 'bg-[#9E2A2B]/20 border border-[#9E2A2B]/40 text-[#E6E4DD] hover:bg-[#9E2A2B]/30 shadow-[0_2px_10px_rgba(158,42,43,0.25)]'
+              : 'bg-[#141619]/60 hover:bg-[#141619] border border-[rgba(230,228,221,0.08)] text-[#6E737B] hover:text-[#E6E4DD]'
           }`}
           title={isAfkLocked ? '点击或按 Esc / Alt+L 解除暂离' : '点击或按 Esc / Alt+L 立即隐匿锁定'}
         >
           {isAfkLocked ? (
             <>
-              <Lock className="w-3.5 h-3.5 text-[#ff8080]" strokeWidth={1.8} />
+              <Lock className="w-3.5 h-3.5 text-[#d15c5c]" strokeWidth={1.8} />
               <span className="tracking-wide">已暂离</span>
             </>
           ) : (
             <>
-              <Unlock className="w-3.5 h-3.5 text-[#9aa0b0]" strokeWidth={1.8} />
+              <Unlock className="w-3.5 h-3.5 text-[#6E737B]" strokeWidth={1.8} />
               <span className="tracking-wide">暂离</span>
             </>
           )}
         </button>
 
         {/* User Identity Badge */}
-        <div className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-xl bg-white/[0.04] border border-white/10 text-xs font-serif">
-          <span className={`max-w-[70px] sm:max-w-none truncate font-medium ${isAdmin ? 'text-name-gold' : 'text-name-red'}`}>
+        <div className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-[4px] bg-[#141619]/60 border border-[rgba(230,228,221,0.08)] text-xs font-serif">
+          <span className={`max-w-[70px] sm:max-w-none truncate font-medium ${userName === '夜星' ? 'text-name-yexing' : 'text-name-xiaoyexing'}`}>
             {userName}
           </span>
           <span
-            className={`text-[9px] px-1.5 py-0.2 rounded font-serif ${
+            className={`text-[9px] px-1.5 py-0.5 rounded-[3px] font-serif ${
               isAdmin
-                ? 'seal-bg text-[#e5c158] border border-[#e5c158]/30 font-medium'
-                : 'bg-[#e05353]/10 text-[#e05353] border border-[#e05353]/30 font-medium'
+                ? 'badge-admin'
+                : 'badge-user'
             }`}
           >
             {isAdmin ? '管理员' : '用户'}
@@ -143,7 +144,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
         {/* Logout Button */}
         <button
           onClick={onLeaveRoom}
-          className="p-1.5 rounded-xl text-slate-400 hover:text-rose-400 hover:bg-white/[0.06] transition-all cursor-pointer"
+          className="p-1.5 rounded-[4px] text-[#6E737B] hover:text-[#d15c5c] hover:bg-[#141619] transition-all cursor-pointer"
           title="离席退室"
         >
           <LogOut className="w-4 h-4" strokeWidth={1.6} />

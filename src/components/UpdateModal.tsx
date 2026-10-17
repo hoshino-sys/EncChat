@@ -29,34 +29,34 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({ versionInfo, onClose }
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md select-none animate-fadeIn"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0A0B0D]/85 backdrop-blur-xl select-none animate-fadeIn"
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-md rounded-2xl bg-gradient-to-b from-[#16181f] via-[#0f1117] to-[#0a0c10] border border-[#a83232]/40 shadow-[0_16px_48px_rgba(0,0,0,0.8),0_0_24px_rgba(168,50,50,0.15)] overflow-hidden animate-scaleUp"
+        className="relative w-full max-w-md rounded-[8px] bg-[#141619]/95 border border-[rgba(230,228,221,0.08)] shadow-[0_24px_70px_rgba(0,0,0,0.9)] overflow-hidden animate-scaleUp"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Top Decorative Banner */}
-        <div className="relative px-6 pt-6 pb-4 border-b border-stone-800/80 bg-gradient-to-r from-[#211215]/80 via-[#181a22]/80 to-[#121622]/80 flex items-start justify-between">
+        <div className="relative px-6 pt-6 pb-4 border-b border-[rgba(230,228,221,0.08)] bg-[#0A0B0D]/40 flex items-start justify-between">
           <div className="flex items-center space-x-3.5">
-            <div className="w-12 h-12 rounded-xl bg-[#a83232]/15 border border-[#a83232]/50 flex items-center justify-center shadow-[0_0_16px_rgba(168,50,50,0.3)] shrink-0">
-              <Sparkles className="w-6 h-6 text-[#e5c158]" />
+            <div className="w-10 h-10 rounded-[4px] bg-[#9E2A2B]/15 border border-[#9E2A2B]/40 flex items-center justify-center shadow-[0_2px_10px_rgba(158,42,43,0.2)] shrink-0">
+              <Sparkles className="w-5 h-5 text-[#E6E4DD]" />
             </div>
             <div>
               <div className="flex items-center space-x-2">
-                <span className="font-serif text-base font-bold text-stone-100 tracking-wide">
+                <span className="font-serif text-base font-medium text-[#E6E4DD] tracking-[0.2em]">
                   墨隐 · 版本更新
                 </span>
-                <span className="text-[10px] px-2 py-0.5 rounded-full font-mono bg-[#a83232]/25 text-[#e05656] border border-[#a83232]/40">
-                  新版已就绪
+                <span className="text-[10px] px-2 py-0.5 rounded-[3px] font-sans bg-[#9E2A2B]/15 text-[#d15c5c] border border-[#9E2A2B]/30">
+                  新版就绪
                 </span>
               </div>
-              <div className="text-xs text-stone-400 font-mono mt-1 flex items-center space-x-1.5">
+              <div className="text-xs text-[#6E737B] font-sans mt-1 flex items-center space-x-1.5">
                 <span>v{CURRENT_VERSION}</span>
-                <span className="text-[#a83232]">➔</span>
-                <span className="text-[#e5c158] font-bold">v{versionInfo.latestVersion}</span>
+                <span className="text-[#9E2A2B]">➔</span>
+                <span className="text-[#6db39e] font-medium">v{versionInfo.latestVersion}</span>
                 {versionInfo.pubDate && (
-                  <span className="text-stone-500 text-[11px] font-serif">({versionInfo.pubDate})</span>
+                  <span className="text-[#6E737B]/70 text-[11px]">({versionInfo.pubDate})</span>
                 )}
               </div>
             </div>
@@ -65,32 +65,32 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({ versionInfo, onClose }
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-lg text-stone-400 hover:text-stone-200 hover:bg-stone-800/60 transition-colors"
+            className="p-1.5 rounded-[4px] text-[#6E737B] hover:text-[#E6E4DD] hover:bg-[rgba(230,228,221,0.06)] transition-colors cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Release Notes Body */}
-        <div className="px-6 py-5 max-h-[46vh] overflow-y-auto space-y-3 font-serif">
-          <div className="text-xs text-stone-400 font-medium tracking-wider text-[11px]">
-            更新典要
+        <div className="px-6 py-5 max-h-[46vh] overflow-y-auto space-y-3 font-sans">
+          <div className="text-xs text-[#6E737B] font-medium tracking-wider text-[11px]">
+            更新要旨
           </div>
-          <div className="space-y-2 bg-stone-900/50 rounded-xl p-3.5 border border-stone-800/60">
+          <div className="space-y-2 bg-[#0A0B0D]/50 rounded-[6px] p-3.5 border border-[rgba(230,228,221,0.06)]">
             {notesList.map((item, idx) => (
-              <div key={idx} className="flex items-start space-x-2 text-xs text-stone-300 leading-relaxed">
-                <span className="text-[#d6a75d] text-[10px] mt-0.5 shrink-0">✦</span>
+              <div key={idx} className="flex items-start space-x-2 text-xs text-[#E6E4DD] leading-relaxed">
+                <span className="text-[#4E7A6B] text-[10px] mt-0.5 shrink-0">✦</span>
                 <span className="break-words">{item}</span>
               </div>
             ))}
           </div>
 
-          <div className="text-[11px] text-stone-500 font-serif leading-relaxed px-1">
+          <div className="text-[11px] text-[#6E737B]/70 leading-relaxed px-1">
             ※ 首次从测试版更新若遇系统提示「签名不一致」，需先卸载旧版后安装；此后所有新版均支持应用内一键无缝平滑覆盖升级。
           </div>
 
           {hasStarted && (
-            <div className="flex items-center space-x-2 p-3 rounded-xl bg-[#6dbb89]/10 border border-[#6dbb89]/30 text-[#6dbb89] text-xs font-serif animate-fadeIn">
+            <div className="flex items-center space-x-2 p-3 rounded-[4px] bg-[#4E7A6B]/15 border border-[#4E7A6B]/30 text-[#6db39e] text-xs animate-fadeIn">
               <CheckCircle2 className="w-4 h-4 shrink-0" />
               <span>下载任务已启动，请留意通知栏进度；下载完成后将自动唤起系统安装。</span>
             </div>
@@ -98,11 +98,11 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({ versionInfo, onClose }
         </div>
 
         {/* Footer Actions */}
-        <div className="px-6 py-4 border-t border-stone-800/80 bg-[#0c0e12]/60 flex items-center justify-end space-x-3">
+        <div className="px-6 py-4 border-t border-[rgba(230,228,221,0.08)] bg-[#0A0B0D]/40 flex items-center justify-end space-x-3">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 rounded-xl text-xs font-serif text-stone-400 hover:text-stone-200 hover:bg-stone-800/50 transition-colors"
+            className="px-4 py-2 rounded-[4px] text-xs font-sans text-[#6E737B] hover:text-[#E6E4DD] hover:bg-[rgba(230,228,221,0.06)] transition-colors cursor-pointer"
           >
             稍后再说
           </button>
@@ -111,7 +111,7 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({ versionInfo, onClose }
             type="button"
             onClick={handleUpdate}
             disabled={isUpdating}
-            className="px-5 py-2.5 rounded-xl text-xs font-serif font-bold text-white bg-gradient-to-r from-[#a83232] to-[#c24141] hover:from-[#b93838] hover:to-[#d14b4b] shadow-[0_4px_16px_rgba(168,50,50,0.4)] active:scale-95 transition-all flex items-center space-x-1.5 cursor-pointer disabled:opacity-60"
+            className="px-5 py-2.5 rounded-[4px] text-xs font-serif font-medium text-[#E6E4DD] bg-[#9E2A2B] hover:bg-[#B83B2B] border border-[rgba(184,59,43,0.5)] shadow-[0_2px_10px_rgba(158,42,43,0.3)] active:scale-95 transition-all flex items-center space-x-1.5 cursor-pointer disabled:opacity-60 tracking-wider"
           >
             {isUpdating ? (
               <>

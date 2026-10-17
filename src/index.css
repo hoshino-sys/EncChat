@@ -12,106 +12,158 @@
     width: 100%;
     margin: 0;
     padding: 0;
-    background-color: #07080a;
-    color: #edeae2;
-    font-family: "Noto Serif SC", "Source Han Serif SC", "Songti SC", "SimSun", "STSong", -apple-system, serif;
+    background-color: #0A0B0D; /* 焦墨 */
+    color: #E6E4DD; /* 宣纸白 */
+    font-family: "PingFang SC", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Microsoft YaHei", sans-serif;
     font-variant-numeric: lining-nums tabular-nums;
     user-select: none;
     -webkit-user-select: none;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 }
 
-/* Zen Chinese Ink Ambient Background */
-.ink-bg {
-  background-color: #07080a;
-  background-image:
-    radial-gradient(circle at 15% 25%, rgba(35, 42, 56, 0.45) 0%, transparent 55%),
-    radial-gradient(circle at 85% 75%, rgba(28, 34, 48, 0.45) 0%, transparent 60%),
-    radial-gradient(circle at 50% 50%, rgba(13, 15, 20, 0.85) 0%, transparent 100%);
+/* 宣纸微粒纹理噪点 (Opacity 0.03) */
+.ink-paper-noise {
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.035'/%3E%3C/svg%3E");
 }
 
-/* Subtle scrollbar */
-::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
+/* 水中氤氲光团呼吸动效 (Deep Teal & Charcoal Drift) */
+@keyframes inkDrift1 {
+  0% { transform: translate(0, 0) scale(1); opacity: 0.14; }
+  50% { transform: translate(40px, -30px) scale(1.15); opacity: 0.22; }
+  100% { transform: translate(0, 0) scale(1); opacity: 0.14; }
 }
 
-::-webkit-scrollbar-track {
-  background: transparent;
+@keyframes inkDrift2 {
+  0% { transform: translate(0, 0) scale(1.1); opacity: 0.18; }
+  50% { transform: translate(-35px, 35px) scale(0.95); opacity: 0.12; }
+  100% { transform: translate(0, 0) scale(1.1); opacity: 0.18; }
 }
 
-::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.12);
-  border-radius: 9999px;
+.animate-ink-drift-1 {
+  animation: inkDrift1 22s ease-in-out infinite;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.22);
+.animate-ink-drift-2 {
+  animation: inkDrift2 26s ease-in-out infinite;
 }
 
-/* Base Frosted Glass Utilities */
-.ink-panel {
-  background: rgba(18, 21, 28, 0.65);
-  backdrop-filter: blur(24px) saturate(130%);
-  -webkit-backdrop-filter: blur(24px) saturate(130%);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+/* 画卷羽化滚动遮罩 (上下边缘渐隐过渡) */
+.ink-scroll-mask {
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 36px, black calc(100% - 36px), transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0%, black 36px, black calc(100% - 36px), transparent 100%);
 }
 
-/* White Frosted Glass Cards (白透毛玻璃) */
-.white-glass {
-  background: rgba(255, 255, 255, 0.07);
-  backdrop-filter: blur(28px) saturate(140%);
-  -webkit-backdrop-filter: blur(28px) saturate(140%);
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  box-shadow: 0 16px 40px -4px rgba(0, 0, 0, 0.5), inset 0 1px 1px 0 rgba(255, 255, 255, 0.22);
+/* 雾中显影消息入场动效 (Mist Reveal) */
+@keyframes mistReveal {
+  from {
+    opacity: 0;
+    filter: blur(4px);
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0px);
+    transform: translateY(0);
+  }
 }
 
-.white-glass-input {
-  background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(28px) saturate(140%);
-  -webkit-backdrop-filter: blur(28px) saturate(140%);
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.45), inset 0 1px 1px 0 rgba(255, 255, 255, 0.18);
+.animate-mist-reveal {
+  animation: mistReveal 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-.white-glass-bubble {
-  background: rgba(255, 255, 255, 0.07);
-  backdrop-filter: blur(24px) saturate(130%);
-  -webkit-backdrop-filter: blur(24px) saturate(130%);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.35), inset 0 1px 1px 0 rgba(255, 255, 255, 0.16);
+/* 浓墨半透明容器与卡片 */
+.ink-card {
+  background: rgba(20, 22, 25, 0.8);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(230, 228, 221, 0.08);
 }
 
-.white-glass-bubble-revealed {
-  background: rgba(255, 255, 255, 0.13);
-  backdrop-filter: blur(28px) saturate(140%);
-  -webkit-backdrop-filter: blur(28px) saturate(140%);
-  border: 1px solid rgba(255, 255, 255, 0.28);
-  box-shadow: 0 8px 30px -2px rgba(0, 0, 0, 0.45), inset 0 1px 1px 0 rgba(255, 255, 255, 0.28);
+.ink-bubble-sealed {
+  background: rgba(20, 22, 25, 0.65);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(230, 228, 221, 0.06);
 }
 
-/* User Identity Color Highlights */
-.text-name-gold {
-  color: #f3d069;
-  text-shadow: 0 0 12px rgba(243, 208, 105, 0.35);
+.ink-bubble-revealed {
+  background: rgba(20, 22, 25, 0.9);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(230, 228, 221, 0.14);
+  box-shadow: 0 8px 30px -4px rgba(0, 0, 0, 0.5);
 }
 
-.text-name-red {
-  color: #e05353;
-  text-shadow: 0 0 12px rgba(224, 83, 83, 0.35);
+/* 朱砂方印按钮规范 (微圆角 4px) */
+.seal-btn {
+  border-radius: 4px;
+  background-color: #9E2A2B;
+  color: #E6E4DD;
+  border: 1px solid rgba(184, 59, 43, 0.5);
+  box-shadow: 0 2px 10px rgba(158, 42, 43, 0.25);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Seal Vermilion Accent (朱砂印) */
-.seal-red {
-  color: #ab3838;
+.seal-btn:hover {
+  background-color: #B83B2B;
+  box-shadow: 0 4px 14px rgba(184, 59, 43, 0.38);
 }
 
-.seal-bg {
-  background-color: rgba(171, 56, 56, 0.12);
-  border: 1px solid rgba(171, 56, 56, 0.25);
+.seal-btn:active {
+  transform: scale(0.98);
 }
 
-/* 3-Second Countdown Hairline Animation */
+/* 席位成员姓名配色规范 */
+.text-name-yexing {
+  color: #d15c5c; /* 夜星: 红色字 */
+}
+
+.text-name-xiaoyexing {
+  color: #dfb76c; /* 小夜星: 金色字 */
+}
+
+/* 角色印章角标与文字规范 */
+/* 管理员: 金色 */
+.badge-admin {
+  border-radius: 3px;
+  background: rgba(223, 183, 108, 0.15);
+  color: #dfb76c;
+  border: 1px solid rgba(223, 183, 108, 0.35);
+}
+
+/* 用户: 蓝色字 */
+.badge-user {
+  border-radius: 3px;
+  background: rgba(74, 123, 176, 0.15);
+  color: #6ba4e8;
+  border: 1px solid rgba(74, 123, 176, 0.35);
+}
+
+/* 朱砂微印印章角标 */
+.seal-badge {
+  border-radius: 4px;
+  background: rgba(158, 42, 43, 0.15);
+  color: #d15c5c;
+  border: 1px solid rgba(158, 42, 43, 0.35);
+}
+
+/* 竹青玉色印章角标 (安全态) */
+.jade-badge {
+  border-radius: 4px;
+  background: rgba(78, 122, 107, 0.15);
+  color: #6db39e;
+  border: 1px solid rgba(78, 122, 107, 0.35);
+}
+
+/* 禅意宋体宽字距标题 */
+.font-serif-zen {
+  font-family: "Noto Serif SC", "Source Han Serif SC", "Songti SC", "SimSun", "STSong", serif;
+  letter-spacing: 0.2em;
+}
+
+/* 3 秒倒计时流光细线 */
 @keyframes countdownDrain {
   from { width: 100%; }
   to { width: 0%; }
@@ -121,73 +173,21 @@
   animation: countdownDrain 3s linear forwards;
 }
 
-/* Decipher Ink Shimmer Glow */
-@keyframes decipherShimmer {
-  0% {
-    filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.2));
-  }
-  50% {
-    filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.6));
-  }
-  100% {
-    filter: drop-shadow(0 0 0 rgba(255, 255, 255, 0));
-  }
+/* 细微滚动条 */
+::-webkit-scrollbar {
+  width: 3px;
+  height: 3px;
 }
 
-.animate-decipher-glow {
-  animation: decipherShimmer 0.4s ease-out;
+::-webkit-scrollbar-track {
+  background: transparent;
 }
 
-/* Smooth Spring Message Bubble Entrance */
-@keyframes bubbleSlideIn {
-  from {
-    opacity: 0;
-    transform: translateY(12px) scale(0.98);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+::-webkit-scrollbar-thumb {
+  background: rgba(230, 228, 221, 0.1);
+  border-radius: 2px;
 }
 
-.animate-bubble-enter {
-  animation: bubbleSlideIn 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(230, 228, 221, 0.2);
 }
-
-/* Modal and Element Scale Up */
-@keyframes scaleUpAnim {
-  from {
-    opacity: 0;
-    transform: scale(0.94);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-.animate-scaleUp {
-  animation: scaleUpAnim 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-/* Fade In */
-@keyframes fadeInAnim {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-.animate-fadeIn {
-  animation: fadeInAnim 0.25s ease-out forwards;
-}
-
-/* Read Receipt Glow Pulse */
-@keyframes readPulseAnim {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.15); filter: drop-shadow(0 0 6px rgba(109, 187, 137, 0.8)); }
-  100% { transform: scale(1); filter: none; }
-}
-
-.animate-read-pulse {
-  animation: readPulseAnim 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-}
-

@@ -207,7 +207,7 @@ export const StealthInput: React.FC<StealthInputProps> = ({
   const displayedContent = (() => {
     if (!text) return null;
     if (isPeeking) {
-      return <span className="text-[#ffffff] font-serif">{text}</span>;
+      return <span className="text-[#E6E4DD] font-sans">{text}</span>;
     }
 
     const chars = Array.from(text);
@@ -220,12 +220,12 @@ export const StealthInput: React.FC<StealthInputProps> = ({
     return (
       <>
         {safeMaskedCount > 0 && (
-          <span className="text-[#a3abb8] font-serif text-[15px] tracking-[0.25em] select-none transition-all duration-150">
+          <span className="text-[#6E737B] font-sans text-[15px] tracking-[0.2em] select-none transition-all duration-150">
             {maskedPart}
           </span>
         )}
         {visiblePart && (
-          <span className="text-[#ffffff] font-serif transition-all duration-150 animate-fade-in">
+          <span className="text-[#E6E4DD] font-sans transition-all duration-150 animate-fade-in">
             {visiblePart}
           </span>
         )}
@@ -248,9 +248,9 @@ export const StealthInput: React.FC<StealthInputProps> = ({
 
       {/* Pending Image Preview Bar (Above Input Capsule) */}
       {pendingImage && (
-        <div className="mb-2 p-2 rounded-xl bg-[#0f1117]/95 border border-[#a83232]/40 shadow-xl flex items-center justify-between animate-fadeIn backdrop-blur-md">
+        <div className="mb-2 p-2 rounded-[4px] bg-[#141619]/90 border border-[rgba(230,228,221,0.1)] shadow-xl flex items-center justify-between animate-fadeIn backdrop-blur-md">
           <div className="flex items-center space-x-3">
-            <div className="relative w-12 h-12 rounded-lg overflow-hidden border border-stone-700/80 shrink-0 bg-black/40">
+            <div className="relative w-12 h-12 rounded-[4px] overflow-hidden border border-[rgba(230,228,221,0.1)] shrink-0 bg-[#0A0B0D]">
               <img
                 src={pendingImage.previewUrl}
                 alt="准备发送的密图"
@@ -258,11 +258,11 @@ export const StealthInput: React.FC<StealthInputProps> = ({
               />
             </div>
             <div>
-              <div className="text-xs font-serif text-stone-200 flex items-center space-x-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#a83232]" />
+              <div className="text-xs font-serif text-[#E6E4DD] flex items-center space-x-1.5 tracking-wider">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#9E2A2B]" />
                 <span>密印图函待发</span>
               </div>
-              <div className="text-[10px] text-stone-400 font-mono mt-0.5">
+              <div className="text-[10px] text-[#6E737B] font-sans mt-0.5">
                 {formatByteSize(pendingImage.size)} · 自动压缩与脱敏
               </div>
             </div>
@@ -273,7 +273,7 @@ export const StealthInput: React.FC<StealthInputProps> = ({
               type="button"
               onClick={handleCancelPendingImage}
               disabled={isSendingImage}
-              className="p-1.5 rounded-lg text-stone-400 hover:text-stone-200 hover:bg-white/10 transition-colors"
+              className="p-1.5 rounded-[4px] text-[#6E737B] hover:text-[#E6E4DD] hover:bg-[rgba(230,228,221,0.06)] transition-colors"
               title="取消选择"
             >
               <X className="w-4 h-4" />
@@ -282,15 +282,15 @@ export const StealthInput: React.FC<StealthInputProps> = ({
         </div>
       )}
 
-      {/* High-Contrast White Frosted Glass Input Capsule */}
-      <div className="relative flex items-end gap-1.5 p-1.5 rounded-2xl white-glass-input transition-all duration-200 focus-within:border-white/50 focus-within:bg-white/[0.12]">
+      {/* Restrained Oriental Ink Input Capsule */}
+      <div className="relative flex items-end gap-1.5 p-1.5 rounded-[8px] bg-[#141619]/80 backdrop-blur-md border border-[rgba(230,228,221,0.08)] transition-all duration-200 focus-within:border-[rgba(230,228,221,0.2)] focus-within:bg-[#141619]/95 shadow-lg">
         {/* Real Native Textarea & Dual Layer Container */}
         <div className="relative flex-1 min-h-[44px] max-h-[130px] flex items-center overflow-hidden">
           {/* Visual Overlay Layer (Masked runes or clear text) */}
           <div
             ref={overlayRef}
             aria-hidden="true"
-            className="absolute inset-0 px-3.5 py-2.5 pointer-events-none text-[15px] leading-relaxed whitespace-pre-wrap break-words overflow-y-auto select-none"
+            className="absolute inset-0 px-3 py-2.5 pointer-events-none text-[15px] font-sans leading-relaxed whitespace-pre-wrap break-words overflow-y-auto select-none"
           >
             {displayedContent}
           </div>
@@ -308,7 +308,7 @@ export const StealthInput: React.FC<StealthInputProps> = ({
             disabled={disabled}
             rows={1}
             autoFocus
-            className="w-full px-3.5 py-2.5 bg-transparent resize-none outline-none text-[15px] leading-relaxed font-serif text-transparent caret-[#ffffff] select-text"
+            className="w-full px-3 py-2.5 bg-transparent resize-none outline-none text-[15px] leading-relaxed font-sans text-transparent caret-[#E6E4DD] select-text"
             placeholder={pendingImage ? '添加密图附言...' : ''}
           />
         </div>
@@ -320,10 +320,10 @@ export const StealthInput: React.FC<StealthInputProps> = ({
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={disabled || isSendingImage}
-            className={`p-2 rounded-xl transition-all cursor-pointer ${
+            className={`p-2 rounded-[4px] transition-all cursor-pointer ${
               pendingImage
-                ? 'text-[#e05353] bg-[#a83232]/20'
-                : 'text-slate-400 hover:text-white hover:bg-white/[0.08]'
+                ? 'text-[#E6E4DD] bg-[#9E2A2B]/25 border border-[#9E2A2B]/40'
+                : 'text-[#6E737B] hover:text-[#E6E4DD] hover:bg-[rgba(230,228,221,0.06)]'
             }`}
             title="选择密印图片或粘贴截图"
           >
@@ -340,26 +340,26 @@ export const StealthInput: React.FC<StealthInputProps> = ({
               onTouchStart={() => setIsPeeking(true)}
               onTouchEnd={() => setIsPeeking(false)}
               onTouchCancel={() => setIsPeeking(false)}
-              className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/[0.08] transition-all cursor-pointer"
+              className="p-2 rounded-[4px] text-[#6E737B] hover:text-[#E6E4DD] hover:bg-[rgba(230,228,221,0.06)] transition-all cursor-pointer"
               title="按住速览已输入文稿"
             >
-              {isPeeking ? <EyeOff className="w-4 h-4 text-white" strokeWidth={1.5} /> : <Eye className="w-4 h-4" strokeWidth={1.5} />}
+              {isPeeking ? <EyeOff className="w-4 h-4 text-[#E6E4DD]" strokeWidth={1.5} /> : <Eye className="w-4 h-4" strokeWidth={1.5} />}
             </button>
           )}
 
-          {/* Send Button */}
+          {/* Send Button (朱砂方印微圆角) */}
           <button
             type="button"
             onClick={handleSend}
             disabled={!canSend}
-            className={`p-2.5 rounded-xl transition-all duration-200 flex items-center justify-center ${
+            className={`p-2.5 rounded-[4px] transition-all duration-200 flex items-center justify-center ${
               canSend
-                ? 'bg-white text-[#0f1117] hover:bg-[#fafafa] shadow-[0_2px_16px_rgba(255,255,255,0.2)] active:scale-95 cursor-pointer'
-                : 'text-slate-600 cursor-not-allowed'
+                ? 'bg-[#9E2A2B] hover:bg-[#B83B2B] text-[#E6E4DD] border border-[rgba(184,59,43,0.5)] shadow-[0_2px_10px_rgba(158,42,43,0.3)] active:scale-95 cursor-pointer'
+                : 'text-[#6E737B]/40 border border-transparent cursor-not-allowed'
             }`}
           >
             {isSendingImage ? (
-              <Loader2 className="w-4 h-4 animate-spin text-[#0f1117]" />
+              <Loader2 className="w-4 h-4 animate-spin text-[#E6E4DD]" />
             ) : (
               <ArrowUp className="w-4 h-4" strokeWidth={2.2} />
             )}

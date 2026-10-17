@@ -28,11 +28,11 @@ export const MessageList: React.FC<MessageListProps> = ({
   }, [messages, systemNotices]);
 
   return (
-    <div className="flex-1 w-full overflow-y-auto px-4 md:px-8 py-6 space-y-2 select-none">
+    <div className="flex-1 w-full overflow-y-auto px-4 md:px-8 py-6 space-y-3 select-none ink-scroll-mask">
       {/* System Notices */}
       {systemNotices.map((notice, idx) => (
         <div key={`notice-${idx}`} className="flex justify-center my-2">
-          <div className="px-3 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] text-[11px] font-serif text-[#9da3b2] tracking-wider animate-fade-in">
+          <div className="px-3 py-1 rounded-[4px] bg-[#141619]/60 border border-[rgba(230,228,221,0.06)] text-[11px] font-sans text-[#6E737B] tracking-wider animate-fadeIn">
             {notice}
           </div>
         </div>
@@ -51,7 +51,7 @@ export const MessageList: React.FC<MessageListProps> = ({
         />
       ))}
 
-      <div ref={bottomRef} className="h-4" />
+      <div ref={bottomRef} className="h-6" />
     </div>
   );
 };

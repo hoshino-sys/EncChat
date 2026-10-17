@@ -193,19 +193,19 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onLogin, savedSession })
   const isFirstTime = hasPasswordSet === false;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pt-[calc(env(safe-area-inset-top,0px)+1rem)] pb-[calc(env(safe-area-inset-bottom,0px)+1rem)] bg-black/80 backdrop-blur-2xl">
-      <div className="w-full max-w-sm rounded-3xl white-glass border border-white/20 shadow-[0_24px_70px_rgba(0,0,0,0.85)] overflow-hidden p-6 md:p-8 animate-fade-in select-none">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pt-[calc(env(safe-area-inset-top,0px)+1rem)] pb-[calc(env(safe-area-inset-bottom,0px)+1rem)] bg-[#0A0B0D]/85 backdrop-blur-xl">
+      <div className="w-full max-w-sm rounded-[8px] bg-[#141619]/90 border border-[rgba(230,228,221,0.08)] backdrop-blur-2xl shadow-[0_24px_70px_rgba(0,0,0,0.9)] overflow-hidden p-6 md:p-8 animate-fade-in select-none">
         {/* Brand Header */}
-        <div className="flex flex-col items-center text-center pb-6 border-b border-white/10">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="w-7 h-7 rounded-lg seal-bg seal-red flex items-center justify-center font-serif text-sm font-bold shadow-[0_2px_12px_rgba(171,56,56,0.35)]">
+        <div className="flex flex-col items-center text-center pb-6 border-b border-[rgba(230,228,221,0.08)]">
+          <div className="flex items-center gap-2.5 mb-2">
+            <span className="w-7 h-7 rounded-[4px] bg-[#9E2A2B] text-[#E6E4DD] border border-[rgba(184,59,43,0.5)] flex items-center justify-center font-serif text-sm font-bold shadow-[0_2px_10px_rgba(158,42,43,0.3)]">
               墨
             </span>
-            <span className="font-serif text-xl tracking-widest text-[#ffffff] font-medium">
+            <span className="font-serif text-xl tracking-[0.25em] text-[#E6E4DD] font-normal">
               墨隐
             </span>
           </div>
-          <p className="font-serif text-xs text-[#a0a6b5] tracking-wider">
+          <p className="font-sans text-xs text-[#6E737B] tracking-wider">
             仅限受权席位验证入席 · 阅后无痕
           </p>
         </div>
@@ -213,14 +213,14 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onLogin, savedSession })
         {/* Form */}
         <form onSubmit={handleSubmit} className="mt-5 space-y-4">
           {error && (
-            <div className="p-3 rounded-2xl bg-rose-950/40 border border-rose-900/60 text-rose-300 text-xs font-serif text-center tracking-wide animate-fade-in">
+            <div className="p-3 rounded-[4px] bg-[#9E2A2B]/15 border border-[#9E2A2B]/35 text-[#d15c5c] text-xs font-sans text-center tracking-wide animate-fade-in">
               {error}
             </div>
           )}
 
           {/* Account Selection */}
           <div>
-            <label className="block text-xs font-serif text-[#9da3b2] mb-2 tracking-wider">
+            <label className="block text-xs font-sans text-[#6E737B] mb-2 tracking-wider">
               选择入席身份
             </label>
             <div className="grid grid-cols-2 gap-2.5">
@@ -231,23 +231,23 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onLogin, savedSession })
                     key={user.name}
                     type="button"
                     onClick={() => setSelectedUser(user.name)}
-                    className={`py-3 px-3 rounded-2xl font-serif text-xs transition-all duration-200 flex flex-col items-center gap-1 cursor-pointer ${
+                    className={`py-3 px-3 rounded-[4px] text-xs transition-all duration-200 flex flex-col items-center gap-1.5 cursor-pointer ${
                       isSelected
-                        ? 'bg-white/[0.14] border border-white/40 shadow-[0_4px_20px_rgba(255,255,255,0.12)] text-[#ffffff]'
-                        : 'bg-white/[0.04] border border-white/10 text-[#8e95a5] hover:text-[#d3d8e5] hover:bg-white/[0.08]'
+                        ? 'bg-[#1e2227] border border-[rgba(230,228,221,0.22)] shadow-[0_4px_20px_rgba(0,0,0,0.5)] text-[#E6E4DD]'
+                        : 'bg-[#0A0B0D]/50 border border-[rgba(230,228,221,0.06)] text-[#6E737B] hover:text-[#E6E4DD] hover:bg-[#141619]/60'
                     }`}
                   >
                     <div className="flex items-center gap-1.5">
                       <User className="w-3.5 h-3.5" strokeWidth={1.8} />
-                      <span className={`font-medium text-sm ${user.name === '夜星' ? 'text-name-gold' : 'text-name-red'}`}>
+                      <span className={`font-serif font-medium text-sm tracking-wider ${user.name === '夜星' ? 'text-name-yexing' : 'text-name-xiaoyexing'}`}>
                         {user.name}
                       </span>
                     </div>
                     <span
-                      className={`text-[10px] px-1.5 py-0.2 rounded font-serif ${
+                      className={`text-[10px] px-1.5 py-0.5 rounded-[3px] font-sans ${
                         user.name === '夜星'
-                          ? 'seal-bg text-[#e5c158] border border-[#e5c158]/30 font-medium'
-                          : 'bg-[#e05353]/10 text-[#e05353] border border-[#e05353]/30 font-medium'
+                          ? 'badge-admin'
+                          : 'badge-user'
                       }`}
                     >
                       {user.roleLabel}
@@ -260,7 +260,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onLogin, savedSession })
 
           {/* First Time Notice */}
           {isFirstTime && (
-            <div className="p-2.5 rounded-xl bg-amber-950/30 border border-amber-800/40 text-amber-200/90 text-[11px] font-serif tracking-wider text-center">
+            <div className="p-2.5 rounded-[4px] bg-[#4E7A6B]/15 border border-[#4E7A6B]/30 text-[#6db39e] text-[11px] font-sans tracking-wide text-center">
               此席位初次入室，请自定密印。一经设定将永久固化，不可更改。
             </div>
           )}
@@ -268,13 +268,13 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onLogin, savedSession })
           {/* Password Input */}
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <label className="text-xs font-serif text-[#9da3b2] tracking-wider">
+              <label className="text-xs font-sans text-[#6E737B] tracking-wider">
                 {isFirstTime ? '设定密印' : '入席密印'}
               </label>
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="text-[11px] text-[#8e95a5] hover:text-[#d0d6e5] font-serif"
+                className="text-[11px] text-[#6E737B] hover:text-[#E6E4DD] font-sans transition-colors cursor-pointer"
               >
                 {showPassword ? (
                   <EyeOff className="w-3.5 h-3.5 inline mr-1" strokeWidth={1.5} />
@@ -289,14 +289,14 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onLogin, savedSession })
               onChange={(e) => setPassword(e.target.value)}
               placeholder="请输入席位密印"
               disabled={isLoading}
-              className="w-full px-3.5 py-2.5 rounded-xl bg-black/40 border border-white/20 focus:border-white/50 focus:outline-none text-sm text-[#ffffff] font-serif placeholder:text-slate-600 transition-all"
+              className="w-full px-3.5 py-2.5 rounded-[4px] bg-[#0A0B0D]/60 border border-[rgba(230,228,221,0.1)] focus:border-[rgba(230,228,221,0.25)] focus:outline-none text-sm text-[#E6E4DD] font-sans placeholder:text-[#6E737B]/50 transition-all"
             />
           </div>
 
           {/* Confirm Password (ONLY shown on first time!) */}
           {isFirstTime && (
             <div className="animate-fade-in">
-              <label className="block text-xs font-serif text-[#9da3b2] mb-1.5 tracking-wider">
+              <label className="block text-xs font-sans text-[#6E737B] mb-1.5 tracking-wider">
                 确认密印
               </label>
               <input
@@ -305,22 +305,22 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onLogin, savedSession })
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="请再次确认席位密印"
                 disabled={isLoading}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-black/40 border border-white/20 focus:border-white/50 focus:outline-none text-sm text-[#ffffff] font-serif placeholder:text-slate-600 transition-all"
+                className="w-full px-3.5 py-2.5 rounded-[4px] bg-[#0A0B0D]/60 border border-[rgba(230,228,221,0.1)] focus:border-[rgba(230,228,221,0.25)] focus:outline-none text-sm text-[#E6E4DD] font-sans placeholder:text-[#6E737B]/50 transition-all"
               />
             </div>
           )}
 
-          {/* Submit Button */}
+          {/* Submit Button (朱砂印章) */}
           <button
             type="submit"
             disabled={isLoading || !password.trim()}
-            className={`w-full mt-4 py-3 px-4 rounded-xl font-serif font-medium text-sm transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer shadow-[0_4px_20px_rgba(255,255,255,0.18)] ${
+            className={`w-full mt-4 py-3 px-4 rounded-[4px] font-serif font-medium text-sm transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer ${
               password.trim() && !isLoading
-                ? 'bg-white hover:bg-[#f2f2f2] text-[#0f1117] active:scale-[0.99]'
-                : 'bg-white/20 text-[#606573] cursor-not-allowed'
+                ? 'bg-[#9E2A2B] hover:bg-[#B83B2B] text-[#E6E4DD] border border-[rgba(184,59,43,0.5)] shadow-[0_4px_16px_rgba(158,42,43,0.35)] active:scale-[0.99]'
+                : 'bg-[#141619] border border-[rgba(230,228,221,0.06)] text-[#6E737B]/40 cursor-not-allowed'
             }`}
           >
-            <span className="tracking-widest">
+            <span className="tracking-[0.25em]">
               {isLoading ? '验证中...' : isFirstTime ? '固化密印并入室' : '入席'}
             </span>
             <ArrowRight className="w-4 h-4" strokeWidth={2} />

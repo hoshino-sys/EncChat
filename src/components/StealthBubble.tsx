@@ -88,7 +88,6 @@ export const StealthBubble: React.FC<StealthBubbleProps> = ({
 
   // Handle mobile finger tap (3 seconds reveal) - PC mouse click is ignored!
   const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
-    // Only mobile touch taps trigger 3s reveal; PC mouse clicks do nothing
     if (e.pointerType !== 'touch') {
       return;
     }
@@ -100,25 +99,21 @@ export const StealthBubble: React.FC<StealthBubbleProps> = ({
       } catch {}
     }
 
-    if (isTapActive) {
-      if (tapTimerRef.current) clearTimeout(tapTimerRef.current);
-      setIsTapActive(false);
-    } else {
-      setIsTapActive(true);
-      if (tapTimerRef.current) clearTimeout(tapTimerRef.current);
-      tapTimerRef.current = window.setTimeout(() => {
-        setIsTapActive(false);
-        tapTimerRef.current = null;
-      }, 3000);
+    if (tapTimerRef.current) {
+      clearTimeout(tapTimerRef.current);
     }
+
+    setIsTapActive(true);
+    tapTimerRef.current = window.setTimeout(() => {
+      setIsTapActive(false);
+      tapTimerRef.current = null;
+    }, 3000);
   };
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.button === 2) {
       e.preventDefault();
-      if (!isAfkLocked) {
-        setIsRightClickDown(true);
-      }
+      setIsRightClickDown(true);
     }
   };
 
@@ -135,54 +130,47 @@ export const StealthBubble: React.FC<StealthBubbleProps> = ({
 
   return (
     <div
-      className={`group flex flex-col mb-4 transition-all duration-300 select-none animate-bubble-enter ${
+      className={`flex flex-col mb-4 select-none animate-mist-reveal ${
         isSelf ? 'items-end' : 'items-start'
       }`}
     >
       {/* Sender info, time & Read/Unread status */}
-      <div className="flex items-center gap-2 px-1.5 mb-1.5 text-[11px] font-serif tracking-wider">
+      <div className="flex items-center gap-2 px-1.5 mb-1.5 text-[11px] font-sans tracking-wide">
         <div className="flex items-center gap-1.5">
-          {/* 夜星 = 金色文字; 小夜星 = 红色文字 */}
-          <span
-            className={`font-medium tracking-wide ${
-              isYeXing ? 'text-name-gold' : 'text-name-red'
-            }`}
-          >
+          <span className={`font-serif tracking-[0.12em] font-medium ${isYeXing ? 'text-name-yexing' : 'text-name-xiaoyexing'}`}>
             {message.senderName}
           </span>
           <span
-            className={`text-[9px] px-1.5 py-0.2 rounded font-serif ${
-              isYeXing
-                ? 'seal-bg text-[#e5c158] border border-[#e5c158]/30 font-medium'
-                : 'bg-[#e05353]/10 text-[#e05353] border border-[#e05353]/30 font-medium'
+            className={`text-[9px] px-1.5 py-0.2 rounded-[3px] font-serif ${
+              isYeXing ? 'badge-admin' : 'badge-user'
             }`}
           >
             {isYeXing ? '管理员' : '用户'}
           </span>
         </div>
 
-        <span className="opacity-45 text-[10px] font-mono lining-nums tabular-nums text-[#a4a9b6]">
+        <span className="text-[10px] font-mono lining-nums tabular-nums text-[#6E737B]">
           {timeString}
         </span>
 
-        {/* Sender: Show Read / Unread status */}
+        {/* Sender: Show Read / Unread status (竹青玉色 for read) */}
         {isSelf && (
           <span
-            className={`inline-flex items-center gap-0.5 text-[10px] font-serif tracking-wider transition-colors duration-200 ${
+            className={`inline-flex items-center gap-0.5 text-[10px] font-sans tracking-wider transition-colors duration-200 ${
               message.isRead
-                ? 'text-[#6dbb89] opacity-95 font-medium animate-read-pulse'
-                : 'text-[#d6a75d] opacity-85'
+                ? 'text-[#4E7A6B] font-medium'
+                : 'text-[#6E737B]'
             }`}
             title={message.isRead ? '已读' : '未读'}
           >
             {message.isRead ? (
               <>
-                <CheckCheck className="w-3 h-3 text-[#6dbb89]" strokeWidth={2.2} />
+                <CheckCheck className="w-3 h-3 text-[#4E7A6B]" strokeWidth={2.2} />
                 <span>已读</span>
               </>
             ) : (
               <>
-                <Check className="w-2.5 h-2.5 text-[#d6a75d]" strokeWidth={2} />
+                <Check className="w-2.5 h-2.5 text-[#6E737B]" strokeWidth={2} />
                 <span>未读</span>
               </>
             )}
@@ -190,7 +178,7 @@ export const StealthBubble: React.FC<StealthBubbleProps> = ({
         )}
       </div>
 
-      {/* White Frosted Glass Bubble or Image Tile */}
+      {/* Bubble or Image Tile */}
       <div
         onPointerUp={handlePointerUp}
         onMouseEnter={() => setIsHovered(true)}
@@ -200,11 +188,11 @@ export const StealthBubble: React.FC<StealthBubbleProps> = ({
         onContextMenu={(e) => e.preventDefault()}
         className={`relative transition-all duration-200 overflow-hidden ${
           message.msgType === 'image'
-            ? 'rounded-2xl border border-stone-800/80 bg-[#0c0e12]/90 shadow-lg'
-            : `max-w-[85%] md:max-w-[72%] rounded-2xl px-4 py-3 ${
+            ? 'rounded-[8px] border border-[rgba(230,228,221,0.08)] bg-[#141619]/90 shadow-lg'
+            : `max-w-[85%] md:max-w-[72%] rounded-[6px] px-4 py-2.5 ${
                 isRevealed
-                  ? 'white-glass-bubble-revealed shadow-[0_8px_32px_rgba(255,255,255,0.08)] scale-[1.01] animate-decipher-glow'
-                  : 'white-glass-bubble hover:border-white/30 hover:bg-white/[0.11]'
+                  ? 'ink-bubble-revealed scale-[1.005]'
+                  : 'ink-bubble-sealed hover:border-[rgba(230,228,221,0.12)]'
               }`
         }`}
       >
@@ -213,14 +201,14 @@ export const StealthBubble: React.FC<StealthBubbleProps> = ({
           <div className="relative">
             {isRevealed ? (
               /* Decrypted Image */
-              <div className="animate-fade-in relative group/img">
+              <div className="animate-fadeIn relative group/img">
                 {message.decryptionError ? (
-                  <div className="px-6 py-8 text-center text-stone-400 text-xs font-serif tracking-widest bg-stone-900/60 rounded-xl">
-                    [图片加载失败]
+                  <div className="px-6 py-8 text-center text-[#6E737B] text-xs font-sans tracking-wider bg-[#141619] rounded-[6px]">
+                    [图片解密失败]
                   </div>
                 ) : message.decryptedImage ? (
                   <div
-                    className="cursor-pointer relative overflow-hidden rounded-xl max-w-[280px] sm:max-w-[340px]"
+                    className="cursor-pointer relative overflow-hidden rounded-[6px] max-w-[280px] sm:max-w-[340px]"
                     onClick={(e) => {
                       e.stopPropagation();
                       if (onPreviewImage && message.decryptedImage) {
@@ -231,27 +219,27 @@ export const StealthBubble: React.FC<StealthBubbleProps> = ({
                     <img
                       src={message.decryptedImage.data}
                       alt="图片"
-                      className="w-full h-auto object-cover rounded-xl border border-stone-700/50 hover:scale-[1.02] transition-transform duration-300"
+                      className="w-full h-auto object-cover rounded-[6px] border border-[rgba(230,228,221,0.1)] hover:scale-[1.015] transition-transform duration-300"
                       draggable={false}
                     />
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
-                      <div className="flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-black/70 text-stone-200 text-xs font-serif shadow-lg border border-white/20">
+                      <div className="flex items-center space-x-1.5 px-3 py-1.5 rounded-[4px] bg-[#141619]/90 text-[#E6E4DD] text-xs font-sans shadow-lg border border-[rgba(230,228,221,0.15)]">
                         <Maximize2 className="w-3.5 h-3.5" />
-                        <span>查看大图</span>
+                        <span>查阅原图</span>
                       </div>
                     </div>
                   </div>
                 ) : (
-                  <div className="w-[220px] h-[160px] flex items-center justify-center bg-stone-900/60 rounded-xl text-stone-400 text-xs font-serif animate-pulse">
-                    正在加载...
+                  <div className="w-[220px] h-[160px] flex items-center justify-center bg-[#141619] rounded-[6px] text-[#6E737B] text-xs font-sans animate-pulse">
+                    正在解封...
                   </div>
                 )}
               </div>
             ) : (
               /* Sealed Image Tile */
               <div
-                className={`w-[180px] sm:w-[220px] p-6 flex flex-col items-center justify-center select-none rounded-xl bg-gradient-to-br from-[#14161c] via-[#0b0d11] to-[#161215] border border-[#a83232]/25 shadow-[inset_0_0_20px_rgba(168,50,50,0.06)] cursor-pointer transition-transform duration-200 ${
-                  isHovered ? 'scale-[1.01] border-[#a83232]/45' : ''
+                className={`w-[180px] sm:w-[220px] p-6 flex flex-col items-center justify-center select-none rounded-[6px] bg-[#141619] border border-[rgba(230,228,221,0.08)] cursor-pointer transition-transform duration-200 ${
+                  isHovered ? 'scale-[1.01] border-[#9E2A2B]/40' : ''
                 }`}
                 style={{
                   aspectRatio: message.imageMeta?.aspectRatio
@@ -262,17 +250,17 @@ export const StealthBubble: React.FC<StealthBubbleProps> = ({
                 }}
               >
                 {/* Corner ancient brackets */}
-                <div className="absolute top-2 left-2 text-[#a83232]/30 text-xs font-mono">⌜</div>
-                <div className="absolute top-2 right-2 text-[#a83232]/30 text-xs font-mono">⌝</div>
-                <div className="absolute bottom-2 left-2 text-[#a83232]/30 text-xs font-mono">⌞</div>
-                <div className="absolute bottom-2 right-2 text-[#a83232]/30 text-xs font-mono">⌟</div>
+                <div className="absolute top-2 left-2 text-[#6E737B]/40 text-xs font-mono">⌜</div>
+                <div className="absolute top-2 right-2 text-[#6E737B]/40 text-xs font-mono">⌝</div>
+                <div className="absolute bottom-2 left-2 text-[#6E737B]/40 text-xs font-mono">⌞</div>
+                <div className="absolute bottom-2 right-2 text-[#6E737B]/40 text-xs font-mono">⌟</div>
 
                 <div className="relative">
-                  <div className="w-12 h-12 rounded-full bg-[#a83232]/10 border border-[#a83232]/30 flex items-center justify-center shadow-[0_0_12px_rgba(168,50,50,0.15)]">
-                    <ImageIcon className="w-6 h-6 text-[#d6a75d] opacity-75" />
+                  <div className="w-11 h-11 rounded-full bg-[#101216] border border-[rgba(230,228,221,0.12)] flex items-center justify-center shadow-inner">
+                    <ImageIcon className="w-5 h-5 text-[#6E737B]" />
                   </div>
-                  <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-[#0d0f12] border border-[#a83232]/40 flex items-center justify-center">
-                    <Lock className="w-2 h-2 text-[#e05353]" />
+                  <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-[#141619] border border-[#9E2A2B]/50 flex items-center justify-center">
+                    <Lock className="w-2.5 h-2.5 text-[#d15c5c]" />
                   </div>
                 </div>
               </div>
@@ -282,12 +270,12 @@ export const StealthBubble: React.FC<StealthBubbleProps> = ({
           /* Text Message Branch */
           <>
             {isRevealed ? (
-              /* Decrypted Plaintext with Scramble Transition */
-              <div className="animate-fade-in">
+              /* Decrypted Plaintext with Clean Sans-Serif Typography */
+              <div className="animate-fadeIn">
                 {message.decryptionError ? (
-                  <span className="text-slate-400 text-xs font-serif tracking-widest">[解印有误]</span>
+                  <span className="text-[#6E737B] text-xs font-sans tracking-wide">[解密失败]</span>
                 ) : (
-                  <div className="whitespace-pre-wrap break-words text-[14px] md:text-[15px] leading-relaxed font-serif text-[#ffffff] tracking-wide select-text">
+                  <div className="whitespace-pre-wrap break-words text-[14px] md:text-[15px] leading-relaxed font-sans text-[#E6E4DD] tracking-normal select-text">
                     {scrambleText}
                   </div>
                 )}
@@ -296,8 +284,8 @@ export const StealthBubble: React.FC<StealthBubbleProps> = ({
               /* 1-to-1 Esoteric Rune Glyphs Mask */
               <div className="py-0.5 overflow-hidden">
                 <span
-                  className={`font-serif text-[14px] md:text-[15px] tracking-[0.25em] select-none block transition-opacity duration-200 ${
-                    isAfkLocked ? 'text-[#505562] opacity-70' : 'text-[#a3abb8] opacity-85'
+                  className={`font-sans text-[14px] md:text-[15px] tracking-[0.25em] select-none block transition-opacity duration-200 ${
+                    isAfkLocked ? 'text-[#6E737B]/50' : 'text-[#6E737B] opacity-85'
                   }`}
                 >
                   {scrambleText}
@@ -307,10 +295,10 @@ export const StealthBubble: React.FC<StealthBubbleProps> = ({
           </>
         )}
 
-        {/* 3-Second Countdown Progress Hairline (流光倒计时细线 - 仅移动端生效) */}
+        {/* 3-Second Countdown Progress Hairline (移动端触摸显影进度线) */}
         {isTapActive && !isAfkLocked && (
-          <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-white/10 pointer-events-none">
-            <div className="h-full bg-gradient-to-r from-transparent via-white/80 to-transparent animate-countdown-3s" />
+          <div className="absolute bottom-0 left-0 right-0 h-[1.5px] bg-[rgba(230,228,221,0.08)] pointer-events-none">
+            <div className="h-full bg-gradient-to-r from-transparent via-[#E6E4DD]/70 to-transparent animate-countdown-3s" />
           </div>
         )}
       </div>

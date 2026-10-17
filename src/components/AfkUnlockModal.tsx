@@ -25,26 +25,26 @@ export const AfkUnlockModal: React.FC<AfkUnlockModalProps> = ({ onUnlock, onClos
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pt-[calc(env(safe-area-inset-top,0px)+1rem)] pb-[calc(env(safe-area-inset-bottom,0px)+1rem)] bg-black/75 backdrop-blur-2xl">
-      <div className="w-full max-w-xs rounded-3xl white-glass p-6 border border-white/25 shadow-[0_24px_70px_rgba(0,0,0,0.85)] animate-fade-in relative">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pt-[calc(env(safe-area-inset-top,0px)+1rem)] pb-[calc(env(safe-area-inset-bottom,0px)+1rem)] bg-[#0A0B0D]/85 backdrop-blur-xl">
+      <div className="w-full max-w-xs rounded-[8px] bg-[#141619]/95 p-6 border border-[rgba(230,228,221,0.08)] shadow-[0_24px_70px_rgba(0,0,0,0.9)] animate-fade-in relative">
         {/* Close icon */}
         <button
           type="button"
           onClick={onClose}
-          className="absolute top-4 right-4 p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/[0.08] transition-all"
+          className="absolute top-4 right-4 p-1.5 rounded-[4px] text-[#6E737B] hover:text-[#E6E4DD] hover:bg-[rgba(230,228,221,0.06)] transition-all cursor-pointer"
         >
           <X className="w-4 h-4" strokeWidth={1.8} />
         </button>
 
         {/* Header */}
         <div className="flex flex-col items-center text-center pb-4 pt-2">
-          <div className="w-11 h-11 rounded-2xl bg-white/[0.08] border border-white/20 flex items-center justify-center mb-3 shadow-[0_4px_16px_rgba(0,0,0,0.3)]">
-            <Lock className="w-5 h-5 text-[#f5f5f7]" strokeWidth={1.8} />
+          <div className="w-10 h-10 rounded-[4px] bg-[#0A0B0D]/60 border border-[rgba(230,228,221,0.1)] flex items-center justify-center mb-3 shadow-md">
+            <Lock className="w-5 h-5 text-[#E6E4DD]" strokeWidth={1.8} />
           </div>
-          <h3 className="font-serif text-base text-[#ffffff] font-medium tracking-wider">
+          <h3 className="font-serif text-base text-[#E6E4DD] font-medium tracking-[0.2em]">
             解除暂离
           </h3>
-          <p className="font-serif text-xs text-[#9aa1b1] mt-1 tracking-wide">
+          <p className="font-sans text-xs text-[#6E737B] mt-1 tracking-wide">
             请输入暂离密符以恢复快捷查阅
           </p>
         </div>
@@ -52,7 +52,7 @@ export const AfkUnlockModal: React.FC<AfkUnlockModalProps> = ({ onUnlock, onClos
         {/* Form */}
         <form onSubmit={handleSubmit} className="mt-3 space-y-4">
           {error && (
-            <div className="p-2.5 rounded-xl bg-rose-950/40 border border-rose-900/60 text-rose-300 text-xs font-serif text-center">
+            <div className="p-2.5 rounded-[4px] bg-[#9E2A2B]/15 border border-[#9E2A2B]/35 text-[#d15c5c] text-xs font-sans text-center">
               {error}
             </div>
           )}
@@ -68,12 +68,12 @@ export const AfkUnlockModal: React.FC<AfkUnlockModalProps> = ({ onUnlock, onClos
                 }}
                 placeholder="输入密符"
                 autoFocus
-                className="w-full px-3.5 py-2.5 rounded-xl bg-black/40 border border-white/20 focus:border-white/50 focus:outline-none text-sm text-[#ffffff] font-serif placeholder:text-slate-600 transition-all pr-10"
+                className="w-full px-3.5 py-2.5 rounded-[4px] bg-[#0A0B0D]/60 border border-[rgba(230,228,221,0.1)] focus:border-[rgba(230,228,221,0.25)] focus:outline-none text-sm text-[#E6E4DD] font-sans placeholder:text-[#6E737B]/50 transition-all pr-10"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-200"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-[#6E737B] hover:text-[#E6E4DD] cursor-pointer"
               >
                 {showPassword ? (
                   <EyeOff className="w-4 h-4" strokeWidth={1.5} />
@@ -86,9 +86,9 @@ export const AfkUnlockModal: React.FC<AfkUnlockModalProps> = ({ onUnlock, onClos
 
           <button
             type="submit"
-            className="w-full py-2.5 px-4 rounded-xl bg-white hover:bg-[#f2f2f2] text-[#0d0f14] font-serif font-medium text-sm transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer shadow-[0_4px_16px_rgba(255,255,255,0.18)] active:scale-[0.98]"
+            className="w-full py-2.5 px-4 rounded-[4px] bg-[#9E2A2B] hover:bg-[#B83B2B] text-[#E6E4DD] font-serif font-medium text-sm border border-[rgba(184,59,43,0.5)] transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer shadow-[0_2px_10px_rgba(158,42,43,0.3)] active:scale-[0.98]"
           >
-            <span className="tracking-widest">解除锁定</span>
+            <span className="tracking-[0.2em]">解除锁定</span>
             <ArrowRight className="w-4 h-4" strokeWidth={2} />
           </button>
         </form>

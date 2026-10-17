@@ -572,13 +572,22 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-[100dvh] w-full ink-bg text-[#ece8df] overflow-hidden select-none font-serif">
+    <div className="relative flex flex-col h-[100dvh] w-full bg-[#0A0B0D] text-[#E6E4DD] overflow-hidden select-none font-sans">
+      {/* Subtle Xuan Paper Texture Overlay (Opacity ~0.03) */}
+      <div className="fixed inset-0 pointer-events-none ink-paper-noise z-0" aria-hidden="true" />
+
+      {/* Breathing Water-Ink Ambient Drifting Orbs */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0" aria-hidden="true">
+        <div className="absolute top-[-8%] left-[-5%] w-[420px] h-[420px] rounded-full bg-[#4E7A6B]/12 blur-[140px] animate-ink-drift-1" />
+        <div className="absolute bottom-[-8%] right-[-5%] w-[480px] h-[480px] rounded-full bg-[#323844]/18 blur-[120px] animate-ink-drift-2" />
+      </div>
+
       {/* Login Modal */}
       {!session && <LoginModal onLogin={handleLogin} savedSession={session} />}
 
       {/* Active Chamber Layout */}
       {session && (
-        <div className="flex flex-col w-full h-full overflow-hidden">
+        <div className="relative z-10 flex flex-col w-full h-full overflow-hidden">
           {/* Full-Width Unified Top Header */}
           <ChatHeader
             roomId={session.roomId}
