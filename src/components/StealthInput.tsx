@@ -307,7 +307,14 @@ export const StealthInput: React.FC<StealthInputProps> = ({
             onCompositionEnd={handleCompositionEnd}
             disabled={disabled}
             rows={1}
-            autoFocus
+            autoFocus={typeof window !== 'undefined' && !('ontouchstart' in window)}
+            onFocus={() => {
+              if (typeof window !== 'undefined') {
+                setTimeout(() => {
+                  window.scrollTo(0, 0);
+                }, 80);
+              }
+            }}
             className="w-full px-3 py-2.5 bg-transparent resize-none outline-none text-[15px] leading-relaxed font-sans text-transparent caret-[#E6E4DD] select-text"
             placeholder={pendingImage ? '添加密图附言...' : ''}
           />

@@ -109,6 +109,41 @@ export const App: React.FC = () => {
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [showNotificationModal, setShowNotificationModal] = useState(false);
 
+  // Mobile virtual keyboard viewport adaptation
+  const [viewportHeight, setViewportHeight] = useState<number | null>(() => {
+    if (typeof window !== 'undefined' && window.visualViewport) {
+      return window.visualViewport.height;
+    }
+    return null;
+  });
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.visualViewport) return;
+
+    const handleViewportChange = () => {
+      if (window.visualViewport) {
+        setViewportHeight(window.visualViewport.height);
+        if (window.scrollY !== 0) {
+          window.scrollTo(0, 0);
+        }
+      }
+    };
+
+    window.visualViewport.addEventListener('resize', handleViewportChange);
+    window.visualViewport.addEventListener('scroll', handleViewportChange);
+    handleViewportChange();
+
+    return () => {
+      window.visualViewport?.removeEventListener('resize', handleViewportChange);
+      window.visualViewport?.removeEventListener('scroll', handleViewportChange);
+    };
+  }, []);
+
+  const isKeyboardOpen =
+    viewportHeight !== null &&
+    typeof window !== 'undefined' &&
+    viewportHeight < (window.innerHeight || window.screen.height) * 0.8;
+
   const handleFinishSplash = useCallback(() => {
     hasShownSplash = true;
     setShowSplash(false);
@@ -572,7 +607,10 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="relative flex flex-col h-[100dvh] w-full bg-[#0A0B0D] text-[#E6E4DD] overflow-hidden select-none font-sans">
+    <div
+      className="relative flex flex-col w-full bg-[#0A0B0D] text-[#E6E4DD] overflow-hidden select-none font-sans"
+      style={{ height: viewportHeight ? `${viewportHeight}px` : '100dvh' }}
+    >
       {/* Subtle Xuan Paper Texture Overlay (Opacity ~0.03) */}
       <div className="fixed inset-0 pointer-events-none ink-paper-noise z-0" aria-hidden="true" />
 
@@ -632,7 +670,13 @@ export const App: React.FC = () => {
                 />
 
                 {/* Input Capsule Area */}
-                <div className="shrink-0 px-4 md:px-6 py-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
+                <div
+                  className={`shrink-0 px-3 md:px-6 py-2 md:py-3 transition-all duration-150 ${
+                    isKeyboardOpen
+                      ? 'pb-2'
+                      : 'pb-[calc(env(safe-area-inset-bottom,0px)+0.75rem)]'
+                  }`}
+                >
                   <StealthInput
                     onSendMessage={handleSendMessage}
                     onSendImage={handleSendImage}
@@ -654,6 +698,8 @@ export const App: React.FC = () => {
           isAfkLocked={isAfkLocked}
           onToggleAfk={handleToggleAfk}
           onOpenNotificationModal={() => setShowNotificationModal(true)}
+          onReconnect={() => networkRef.current?.reconnect()}
+          onLeaveRoom={handleLeaveRoom}
           onClose={() => setShowMobileMembers(false)}
         />
       )}

@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Users, Lock, Unlock, Bell } from 'lucide-react';
+import { X, Users, Lock, Unlock, Bell, LogOut, RotateCcw } from 'lucide-react';
 import { PeerUser, ConnectionState } from '../types/chat';
 
 interface MobileMemberModalProps {
@@ -9,6 +9,8 @@ interface MobileMemberModalProps {
   isAfkLocked: boolean;
   onToggleAfk: () => void;
   onOpenNotificationModal?: () => void;
+  onReconnect?: () => void;
+  onLeaveRoom?: () => void;
   onClose: () => void;
 }
 
@@ -19,6 +21,8 @@ export const MobileMemberModal: React.FC<MobileMemberModalProps> = ({
   isAfkLocked,
   onToggleAfk,
   onOpenNotificationModal,
+  onReconnect,
+  onLeaveRoom,
   onClose,
 }) => {
   const isYeXingOnline =
@@ -146,8 +150,26 @@ export const MobileMemberModal: React.FC<MobileMemberModalProps> = ({
           ))}
         </div>
 
-        {/* AFK and Security note */}
-        <div className="pt-3 border-t border-[rgba(230,228,221,0.08)] space-y-3">
+        {/* Actions & Utilities */}
+        <div className="pt-3 border-t border-[rgba(230,228,221,0.08)] space-y-2.5">
+          {/* Reconnect Option (prominently displayed when disconnected) */}
+          {connectionState !== 'connected' && onReconnect && (
+            <button
+              type="button"
+              onClick={() => {
+                onReconnect();
+              }}
+              className="w-full py-2.5 px-3.5 rounded-[4px] font-sans text-xs transition-all duration-200 flex items-center justify-between cursor-pointer bg-[#9E2A2B]/15 hover:bg-[#9E2A2B]/25 border border-[#9E2A2B]/35 text-[#d15c5c]"
+            >
+              <div className="flex items-center gap-2">
+                <RotateCcw className="w-3.5 h-3.5 text-[#d15c5c]" strokeWidth={1.8} />
+                <span>通信通道连结异常</span>
+              </div>
+              <span className="text-[11px] font-serif underline underline-offset-2">点击重新连结</span>
+            </button>
+          )}
+
+          {/* Notification Diagnostics */}
           {onOpenNotificationModal && (
             <button
               type="button"
@@ -165,6 +187,7 @@ export const MobileMemberModal: React.FC<MobileMemberModalProps> = ({
             </button>
           )}
 
+          {/* AFK Privacy Lock */}
           <button
             type="button"
             onClick={() => {
@@ -190,7 +213,25 @@ export const MobileMemberModal: React.FC<MobileMemberModalProps> = ({
             </span>
           </button>
 
-          <div className="text-[10px] font-serif text-[#6E737B]/60 text-center tracking-[0.2em]">
+          {/* Leave Room Action */}
+          {onLeaveRoom && (
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                onLeaveRoom();
+              }}
+              className="w-full py-2.5 px-3.5 rounded-[4px] font-sans text-xs transition-all duration-200 flex items-center justify-between cursor-pointer bg-[#141619] hover:bg-[#9E2A2B]/15 border border-[rgba(230,228,221,0.08)] hover:border-[#9E2A2B]/40 text-[#6E737B] hover:text-[#d15c5c]"
+            >
+              <div className="flex items-center gap-2">
+                <LogOut className="w-3.5 h-3.5" strokeWidth={1.8} />
+                <span>离席退室</span>
+              </div>
+              <span className="text-[10px] opacity-70">退出当前房间</span>
+            </button>
+          )}
+
+          <div className="text-[10px] font-serif text-[#6E737B]/60 text-center tracking-[0.2em] pt-1">
             墨隐 · 席位通信
           </div>
         </div>
