@@ -43,12 +43,12 @@ export default {
     // Version Check endpoint for Android In-App Update
     if (url.pathname === '/api/version' || url.pathname === '/api/check-update') {
       return new Response(JSON.stringify({
-        latestVersion: '1.5.2',
-        versionCode: 7,
-        downloadUrl: 'https://chat.nightstar.top/api/download/moyin-encchat-v1.5.2-debug.apk',
-        githubDownloadUrl: 'https://github.com/hoshino-sys/EncChat/releases/download/v1.5.2/moyin-encchat-v1.5.2-debug.apk',
-        releaseNotes: '1. 修复通知推送及小图标\n2. 剔除图片未解密时的多余提示文字\n3. 优化视觉与防窥隐匿体验',
-        pubDate: '2026-10-15',
+        latestVersion: '1.5.3',
+        versionCode: 8,
+        downloadUrl: 'https://chat.nightstar.top/api/download/moyin-encchat-v1.5.3-debug.apk',
+        githubDownloadUrl: 'https://github.com/hoshino-sys/EncChat/releases/download/v1.5.3/moyin-encchat-v1.5.3-debug.apk',
+        releaseNotes: '1. 修复横幅通知（Heads-up）最高优先级调度\n2. 新增信函通知与横幅状态自检面板\n3. 新增一键直达系统通知设置与测试通知',
+        pubDate: '2026-10-17',
         forceUpdate: false,
       }), {
         headers: {
@@ -60,8 +60,10 @@ export default {
 
     // APK Download handler (proxies GitHub Releases asset directly with APK mime-type)
     if (url.pathname.startsWith('/download/') || url.pathname.startsWith('/api/download/')) {
-      const fileName = url.pathname.split('/').pop() || 'moyin-encchat-v1.5.2-debug.apk';
-      const githubUrl = `https://github.com/hoshino-sys/EncChat/releases/download/v1.5.2/${fileName}`;
+      const fileName = url.pathname.split('/').pop() || 'moyin-encchat-v1.5.3-debug.apk';
+      const tagMatch = fileName.match(/v(\d+\.\d+\.\d+)/);
+      const versionTag = tagMatch ? `v${tagMatch[1]}` : 'v1.5.3';
+      const githubUrl = `https://github.com/hoshino-sys/EncChat/releases/download/${versionTag}/${fileName}`;
 
       try {
         const upstream = await fetch(githubUrl, {
@@ -343,12 +345,12 @@ export class ChatRoom {
             try {
               ws.send(JSON.stringify({
                 type: 'update_available',
-                latestVersion: '1.5.2',
-                versionCode: 7,
-                downloadUrl: 'https://chat.nightstar.top/api/download/moyin-encchat-v1.5.2-debug.apk',
-                githubDownloadUrl: 'https://github.com/hoshino-sys/EncChat/releases/download/v1.5.2/moyin-encchat-v1.5.2-debug.apk',
-                releaseNotes: '1. 修复通知推送及小图标\n2. 剔除图片未解密时的多余提示文字\n3. 优化视觉与防窥隐匿体验',
-                pubDate: '2026-10-15',
+                latestVersion: '1.5.3',
+                versionCode: 8,
+                downloadUrl: 'https://chat.nightstar.top/api/download/moyin-encchat-v1.5.3-debug.apk',
+                githubDownloadUrl: 'https://github.com/hoshino-sys/EncChat/releases/download/v1.5.3/moyin-encchat-v1.5.3-debug.apk',
+                releaseNotes: '1. 修复横幅通知（Heads-up）最高优先级调度\n2. 新增信函通知与横幅状态自检面板\n3. 新增一键直达系统通知设置与测试通知',
+                pubDate: '2026-10-17',
                 forceUpdate: false,
               }));
             } catch {}

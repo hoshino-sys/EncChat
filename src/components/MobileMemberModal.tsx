@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Users, Lock, Unlock } from 'lucide-react';
+import { X, Users, Lock, Unlock, Bell } from 'lucide-react';
 import { PeerUser, ConnectionState } from '../types/chat';
 
 interface MobileMemberModalProps {
@@ -8,6 +8,7 @@ interface MobileMemberModalProps {
   connectionState: ConnectionState;
   isAfkLocked: boolean;
   onToggleAfk: () => void;
+  onOpenNotificationModal?: () => void;
   onClose: () => void;
 }
 
@@ -17,6 +18,7 @@ export const MobileMemberModal: React.FC<MobileMemberModalProps> = ({
   connectionState,
   isAfkLocked,
   onToggleAfk,
+  onOpenNotificationModal,
   onClose,
 }) => {
   const isYeXingOnline =
@@ -146,6 +148,23 @@ export const MobileMemberModal: React.FC<MobileMemberModalProps> = ({
 
         {/* AFK and Security note */}
         <div className="pt-3 border-t border-white/10 space-y-3">
+          {onOpenNotificationModal && (
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                onOpenNotificationModal();
+              }}
+              className="w-full py-2.5 px-3.5 rounded-2xl font-serif text-xs transition-all duration-200 flex items-center justify-between cursor-pointer bg-white/[0.05] hover:bg-white/[0.1] border border-white/15 text-[#e0ded6]"
+            >
+              <div className="flex items-center gap-2">
+                <Bell className="w-3.5 h-3.5 text-[#e5c158]" strokeWidth={1.8} />
+                <span>信函通知与横幅状态诊断</span>
+              </div>
+              <span className="text-[10px] text-[#e5c158]">自检查测</span>
+            </button>
+          )}
+
           <button
             type="button"
             onClick={() => {

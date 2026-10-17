@@ -16,6 +16,7 @@ import { getCharCount } from './utils/maskCipher';
 import { notificationService } from './services/notification';
 import { SplashScreen } from './components/SplashScreen';
 import { UpdateModal } from './components/UpdateModal';
+import { NotificationModal } from './components/NotificationModal';
 import { checkForUpdate, VersionInfo, CURRENT_VERSION_CODE } from './services/updateChecker';
 import { isCapacitorNative } from './services/apiConfig';
 
@@ -106,6 +107,7 @@ export const App: React.FC = () => {
   const [showSplash, setShowSplash] = useState(() => !hasShownSplash);
   const [versionInfo, setVersionInfo] = useState<VersionInfo | null>(null);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
+  const [showNotificationModal, setShowNotificationModal] = useState(false);
 
   const handleFinishSplash = useCallback(() => {
     hasShownSplash = true;
@@ -587,6 +589,7 @@ export const App: React.FC = () => {
             isAfkLocked={isAfkLocked}
             onToggleAfk={handleToggleAfk}
             onOpenMembers={() => setShowMobileMembers(true)}
+            onOpenNotificationModal={() => setShowNotificationModal(true)}
             onReconnect={() => networkRef.current?.reconnect()}
             onLeaveRoom={handleLeaveRoom}
           />
@@ -641,6 +644,7 @@ export const App: React.FC = () => {
           connectionState={connectionState}
           isAfkLocked={isAfkLocked}
           onToggleAfk={handleToggleAfk}
+          onOpenNotificationModal={() => setShowNotificationModal(true)}
           onClose={() => setShowMobileMembers(false)}
         />
       )}
@@ -672,6 +676,11 @@ export const App: React.FC = () => {
           versionInfo={versionInfo}
           onClose={() => setShowUpdateModal(false)}
         />
+      )}
+
+      {/* Notification Diagnostics & Testing Modal */}
+      {showNotificationModal && (
+        <NotificationModal onClose={() => setShowNotificationModal(false)} />
       )}
     </div>
   );

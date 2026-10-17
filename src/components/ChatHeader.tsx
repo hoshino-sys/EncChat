@@ -1,5 +1,5 @@
 import React from 'react';
-import { LogOut, Lock, Unlock, Users } from 'lucide-react';
+import { LogOut, Lock, Unlock, Users, Bell } from 'lucide-react';
 import { ConnectionState, UserRole } from '../types/chat';
 
 interface ChatHeaderProps {
@@ -11,6 +11,7 @@ interface ChatHeaderProps {
   isAfkLocked: boolean;
   onToggleAfk: () => void;
   onOpenMembers: () => void;
+  onOpenNotificationModal?: () => void;
   onReconnect?: () => void;
   onLeaveRoom: () => void;
 }
@@ -24,6 +25,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
   isAfkLocked,
   onToggleAfk,
   onOpenMembers,
+  onOpenNotificationModal,
   onReconnect,
   onLeaveRoom,
 }) => {
@@ -83,8 +85,21 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
         )}
       </div>
 
-      {/* Right: AFK Privacy Button, User Badge & Leave */}
+      {/* Right: Notification, AFK Privacy Button, User Badge & Leave */}
       <div className="flex items-center gap-1.5 sm:gap-2">
+        {/* Notification Status Diagnostic & Test Button */}
+        {onOpenNotificationModal && (
+          <button
+            type="button"
+            onClick={onOpenNotificationModal}
+            className="flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-xs font-serif text-[#d8d4c8] hover:text-[#e5c158] transition-all cursor-pointer"
+            title="信函通知与悬浮横幅状态诊断及测试"
+          >
+            <Bell className="w-3.5 h-3.5 text-[#e5c158]" strokeWidth={1.8} />
+            <span className="hidden sm:inline">通知</span>
+          </button>
+        )}
+
         {/* AFK Privacy Lock Button */}
         <button
           type="button"
