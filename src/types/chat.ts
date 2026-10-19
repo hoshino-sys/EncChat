@@ -25,6 +25,8 @@ export interface ChatMessage {
   senderId: string;
   senderName: string;
   timestamp: number;
+  seq?: number; // Monotonic authoritative server sequence number
+  serverTimestamp?: number; // Cloudflare edge authoritative timestamp
   msgType?: MessageType;
   imageMeta?: ImageMeta;
   charCount?: number; // Exact character count for 1:1 masked rune rendering

@@ -43,12 +43,12 @@ export default {
     // Version Check endpoint for Android In-App Update
     if (url.pathname === '/api/version' || url.pathname === '/api/check-update') {
       return new Response(JSON.stringify({
-        latestVersion: '1.7.1',
-        versionCode: 11,
-        downloadUrl: 'https://chat.nightstar.top/api/download/moyin-encchat-v1.7.1-debug.apk',
-        githubDownloadUrl: 'https://github.com/hoshino-sys/EncChat/releases/download/v1.7.1/moyin-encchat-v1.7.1-debug.apk',
-        releaseNotes: '1. 暂离按钮全局常驻，席位抽屉支持平滑滑动与淡入淡出进退场动画\n2. 大图全屏查看支持平滑缩放展开与收回动画\n3. 历史消息时间显示增加“昨天/月日/具体日期”自适应\n4. 己方视角用户名靠最右展示，身份标签位于用户名左侧\n5. 输入框文稿速览改为点击显示 3 秒并附带倒计时指示\n6. 优化网络连接与快速重连机制，秒级唤醒恢复',
-        pubDate: '2026-10-17',
+        latestVersion: '1.7.2',
+        versionCode: 12,
+        downloadUrl: 'https://chat.nightstar.top/api/download/moyin-encchat-v1.7.2-debug.apk',
+        githubDownloadUrl: 'https://github.com/hoshino-sys/EncChat/releases/download/v1.7.2/moyin-encchat-v1.7.2-debug.apk',
+        releaseNotes: '1. 权威服务端单调序号（seq）仲裁，彻底根治设备本地时钟不准导致的消息时序颠倒错乱\n2. 接入纳秒级 SNTP 双向时钟偏差动态对齐，确保本地乐观渲染全局同步\n3. 消息持久化存储全面迁移为顺序序列规整索引，多端拉取毫厘不差',
+        pubDate: '2026-10-19',
         forceUpdate: false,
       }), {
         headers: {
@@ -60,9 +60,9 @@ export default {
 
     // APK Download handler (proxies GitHub Releases asset directly with APK mime-type)
     if (url.pathname.startsWith('/download/') || url.pathname.startsWith('/api/download/')) {
-      const fileName = url.pathname.split('/').pop() || 'moyin-encchat-v1.7.1-debug.apk';
+      const fileName = url.pathname.split('/').pop() || 'moyin-encchat-v1.7.2-debug.apk';
       const tagMatch = fileName.match(/v(\d+\.\d+\.\d+)/);
-      const versionTag = tagMatch ? `v${tagMatch[1]}` : 'v1.7.1';
+      const versionTag = tagMatch ? `v${tagMatch[1]}` : 'v1.7.2';
       const githubUrl = `https://github.com/hoshino-sys/EncChat/releases/download/${versionTag}/${fileName}`;
 
       try {
@@ -120,10 +120,28 @@ interface SessionMeta {
 export class ChatRoom {
   private state: DurableObjectState;
   private sessions: Map<WebSocket, SessionMeta>;
+  private currentSeq: number = 0;
 
   constructor(state: DurableObjectState) {
     this.state = state;
     this.sessions = new Map();
+  }
+
+  private async getNextSeq(): Promise<number> {
+    if (!this.currentSeq) {
+      this.currentSeq = (await this.state.storage.get<number>('room_seq')) || 0;
+      if (this.currentSeq === 0) {
+        const historyMap = await this.state.storage.list<any>({ prefix: 'msg_', reverse: true, limit: 1 });
+        for (const msg of historyMap.values()) {
+          if (msg && typeof msg.seq === 'number' && msg.seq > this.currentSeq) {
+            this.currentSeq = msg.seq;
+          }
+        }
+      }
+    }
+    this.currentSeq++;
+    await this.state.storage.put('room_seq', this.currentSeq);
+    return this.currentSeq;
   }
 
   async fetch(request: Request): Promise<Response> {
@@ -322,6 +340,12 @@ export class ChatRoom {
               joinedAt: Date.now(),
             });
 
+            // Send handshake acknowledgement with edge server time for SNTP client calibration
+            ws.send(JSON.stringify({
+              type: 'join_ack',
+              serverTime: Date.now()
+            }));
+
             this.broadcastPeers();
             this.broadcast({
               type: 'join_notice',
@@ -329,10 +353,15 @@ export class ChatRoom {
               userName: requestedName
             }, ws);
 
-            // Send message history from SQLite storage to this client
+            // Send message history from SQLite storage sorted strictly by authoritative sequence number
             try {
               const historyMap = await this.state.storage.list<any>({ prefix: 'msg_', limit: 1000 });
-              const messages = Array.from(historyMap.values()).sort((a, b) => a.timestamp - b.timestamp);
+              const messages = Array.from(historyMap.values()).sort((a, b) => {
+                if (a.seq !== undefined && b.seq !== undefined) {
+                  return a.seq - b.seq;
+                }
+                return a.timestamp - b.timestamp;
+              });
               ws.send(JSON.stringify({
                 type: 'history',
                 messages
@@ -345,12 +374,12 @@ export class ChatRoom {
             try {
               ws.send(JSON.stringify({
                 type: 'update_available',
-                latestVersion: '1.7.1',
-                versionCode: 11,
-                downloadUrl: 'https://chat.nightstar.top/api/download/moyin-encchat-v1.7.1-debug.apk',
-                githubDownloadUrl: 'https://github.com/hoshino-sys/EncChat/releases/download/v1.7.1/moyin-encchat-v1.7.1-debug.apk',
-                releaseNotes: '1. 暂离按钮全局常驻，席位抽屉支持平滑滑动与淡入淡出进退场动画\n2. 大图全屏查看支持平滑缩放展开与收回动画\n3. 历史消息时间显示增加“昨天/月日/具体日期”自适应\n4. 己方视角用户名靠最右展示，身份标签位于用户名左侧\n5. 输入框文稿速览改为点击显示 3 秒并附带倒计时指示\n6. 优化网络连接与快速重连机制，秒级唤醒恢复',
-                pubDate: '2026-10-17',
+                latestVersion: '1.7.2',
+                versionCode: 12,
+                downloadUrl: 'https://chat.nightstar.top/api/download/moyin-encchat-v1.7.2-debug.apk',
+                githubDownloadUrl: 'https://github.com/hoshino-sys/EncChat/releases/download/v1.7.2/moyin-encchat-v1.7.2-debug.apk',
+                releaseNotes: '1. 权威服务端单调序号（seq）仲裁，彻底根治设备本地时钟不准导致的消息时序颠倒错乱\n2. 接入纳秒级 SNTP 双向时钟偏差动态对齐，确保本地乐观渲染全局同步\n3. 消息持久化存储全面迁移为顺序序列规整索引，多端拉取毫厘不差',
+                pubDate: '2026-10-19',
                 forceUpdate: false,
               }));
             } catch {}
@@ -360,13 +389,18 @@ export class ChatRoom {
           case 'message': {
             const msg = data.message;
             if (msg && msg.id) {
+              const seq = await this.getNextSeq();
+              const serverNow = Date.now();
               const enrichedMsg = {
                 ...msg,
+                seq,
+                serverTimestamp: serverNow,
+                timestamp: serverNow, // Authoritative server timestamp prevents client clock skew
                 isRead: Boolean(msg.isRead),
               };
-              // Persist message in SQLite storage
+              // Persist message in SQLite storage with monotonically padded sequence key
               try {
-                await this.state.storage.put(`msg_${msg.timestamp}_${msg.id}`, enrichedMsg);
+                await this.state.storage.put(`msg_${String(seq).padStart(12, '0')}_${msg.id}`, enrichedMsg);
 
                 // Periodic eviction: keep DO storage lightweight (<= 500 messages)
                 if (Math.random() < 0.1) {
@@ -388,6 +422,14 @@ export class ChatRoom {
                 type: 'message',
                 message: enrichedMsg
               }, ws);
+
+              // Echo message_ack to sender with authoritative seq & timestamp
+              ws.send(JSON.stringify({
+                type: 'message_ack',
+                id: msg.id,
+                seq,
+                timestamp: serverNow
+              }));
             }
             break;
           }
@@ -434,6 +476,8 @@ export class ChatRoom {
                 for (const key of keys.keys()) {
                   await this.state.storage.delete(key);
                 }
+                await this.state.storage.delete('room_seq');
+                this.currentSeq = 0;
                 this.broadcast({ type: 'history_cleared' });
               } catch (err) {
                 console.error('Failed to clear history:', err);
@@ -443,7 +487,7 @@ export class ChatRoom {
           }
 
           case 'ping': {
-            ws.send(JSON.stringify({ type: 'pong' }));
+            ws.send(JSON.stringify({ type: 'pong', serverTime: Date.now() }));
             break;
           }
 

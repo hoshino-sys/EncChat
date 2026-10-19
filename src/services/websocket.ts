@@ -9,6 +9,7 @@ export interface WebSocketCallbacks {
   onSystemNotice: (text: string) => void;
   onMessagesRead?: (messageIds: string[], readerName: string, readAt: number) => void;
   onUpdateAvailable?: (versionInfo: any) => void;
+  onMessageAck?: (id: string, seq: number, timestamp: number) => void;
 }
 
 export class ChatNetworkService {
@@ -29,6 +30,7 @@ export class ChatNetworkService {
   private reconnectAttempts: number = 0;
   private lastMessageReceivedAt: number = Date.now();
   private isListenersAttached: boolean = false;
+  private serverTimeOffset: number = 0;
 
   constructor(callbacks: WebSocketCallbacks) {
     this.callbacks = callbacks;
@@ -232,11 +234,22 @@ export class ChatNetworkService {
         }
         break;
 
+      case 'join_ack':
       case 'pong':
         this.lastMessageReceivedAt = Date.now();
+        if (typeof data.serverTime === 'number') {
+          this.serverTimeOffset = data.serverTime - Date.now();
+        }
         if (this.pongTimeoutTimer) {
           clearTimeout(this.pongTimeoutTimer);
           this.pongTimeoutTimer = null;
+        }
+        break;
+
+      case 'message_ack':
+        if (data.id && typeof data.seq === 'number') {
+          const authoritativeTs = data.timestamp || (Date.now() + this.serverTimeOffset);
+          this.callbacks.onMessageAck?.(data.id, data.seq, authoritativeTs);
         }
         break;
 
@@ -433,6 +446,10 @@ export class ChatNetworkService {
 
   public getWsUrl(): string {
     return this.wsUrl;
+  }
+
+  public getServerTime(): number {
+    return Date.now() + this.serverTimeOffset;
   }
 
   public reconnect() {

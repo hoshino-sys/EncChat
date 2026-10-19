@@ -51,6 +51,16 @@ async function decryptMsgPayload(msg: ChatMessage, key: CryptoKey): Promise<Part
 
 let hasShownSplash = false;
 
+// Monotonic authoritative comparator: strictly sort by seq if available, fallback to calibrated timestamp
+export const sortMessages = (list: ChatMessage[]): ChatMessage[] => {
+  return [...list].sort((a, b) => {
+    if (a.seq !== undefined && b.seq !== undefined) {
+      return a.seq - b.seq;
+    }
+    return a.timestamp - b.timestamp;
+  });
+};
+
 export const App: React.FC = () => {
   const [session, setSession] = useState<RoomSession | null>(() => {
     try {
@@ -74,7 +84,7 @@ export const App: React.FC = () => {
         if (sess?.roomId) {
           const cached = localStorage.getItem(MESSAGE_CACHE_PREFIX + sess.roomId);
           if (cached) {
-            return JSON.parse(cached);
+            return sortMessages(JSON.parse(cached));
           }
         }
       }
@@ -204,7 +214,7 @@ export const App: React.FC = () => {
     }
   }, [session?.roomId, messages]);
 
-  // Handle incoming encrypted message with persistent isSelf identity check
+  // Handle incoming encrypted message with persistent isSelf identity check and monotonic sort
   const handleIncomingMessage = useCallback(async (msg: ChatMessage) => {
     const currentSession = sessionRef.current;
     const isSelf = Boolean(
@@ -216,7 +226,22 @@ export const App: React.FC = () => {
     notificationService.notifyNewMessage(msg.senderName, isSelf, msg.msgType === 'image');
 
     setMessages((prev) => {
-      if (prev.some((m) => m.id === msg.id)) return prev;
+      const existing = prev.find((m) => m.id === msg.id);
+      if (existing) {
+        return sortMessages(
+          prev.map((m) =>
+            m.id === msg.id
+              ? {
+                  ...m,
+                  seq: msg.seq ?? m.seq,
+                  timestamp: msg.timestamp || m.timestamp,
+                  serverTimestamp: msg.serverTimestamp || m.serverTimestamp,
+                  isRead: Boolean(msg.isRead || m.isRead),
+                }
+              : m
+          )
+        );
+      }
 
       const normalizedMsg: ChatMessage = {
         ...msg,
@@ -225,7 +250,7 @@ export const App: React.FC = () => {
       };
 
       if (normalizedMsg.isSelf) {
-        return [...prev, normalizedMsg];
+        return sortMessages([...prev, normalizedMsg]);
       }
 
       const key = cryptoKeyRef.current;
@@ -237,8 +262,19 @@ export const App: React.FC = () => {
         });
       }
 
-      return [...prev, normalizedMsg];
+      return sortMessages([...prev, normalizedMsg]);
     });
+  }, []);
+
+  // Handle message ACK from server containing authoritative seq & timestamp
+  const handleMessageAck = useCallback((id: string, seq: number, timestamp: number) => {
+    setMessages((prev) =>
+      sortMessages(
+        prev.map((m) =>
+          m.id === id ? { ...m, seq, timestamp, serverTimestamp: timestamp } : m
+        )
+      )
+    );
   }, []);
 
   // Handle history replay with smart cache merge to eliminate re-decryption blank screen
@@ -263,6 +299,9 @@ export const App: React.FC = () => {
           // Already in local cache! Keep cached decryptedText or decryptedImage to avoid lag
           const updated: ChatMessage = {
             ...existing,
+            seq: serverMsg.seq ?? existing.seq,
+            timestamp: serverMsg.timestamp || existing.timestamp,
+            serverTimestamp: serverMsg.serverTimestamp || existing.serverTimestamp,
             isSelf,
             isRead: isRead || existing.isRead,
             readAt: readAt || existing.readAt,
@@ -309,7 +348,7 @@ export const App: React.FC = () => {
         });
       }
 
-      return Array.from(prevMap.values()).sort((a, b) => a.timestamp - b.timestamp);
+      return sortMessages(Array.from(prevMap.values()));
     });
   }, []);
 
@@ -398,6 +437,7 @@ export const App: React.FC = () => {
           onStatusChange: handleStatusChange,
           onSystemNotice: handleSystemNotice,
           onMessagesRead: handleMessagesRead,
+          onMessageAck: handleMessageAck,
           onUpdateAvailable: async (info: any) => {
             if (info && info.latestVersion) {
               let currentCode = CURRENT_VERSION_CODE;
@@ -439,7 +479,7 @@ export const App: React.FC = () => {
         networkRef.current = null;
       }
     };
-  }, [session, handleIncomingMessage, handleIncomingHistory, handleMessagesRead, handlePeersUpdate, handleStatusChange, handleSystemNotice]);
+  }, [session, handleIncomingMessage, handleIncomingHistory, handleMessagesRead, handleMessageAck, handlePeersUpdate, handleStatusChange, handleSystemNotice]);
 
   const handleLogin = (newSession: RoomSession) => {
     try {
@@ -532,12 +572,13 @@ export const App: React.FC = () => {
     try {
       const encrypted = await encryptMessage(text, cryptoKey);
       const charCount = getCharCount(text);
+      const now = networkRef.current?.getServerTime() || Date.now();
       const msg: ChatMessage = {
-        id: `msg_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
+        id: `msg_${now}_${Math.random().toString(36).substring(2, 8)}`,
         roomId: session.roomId,
         senderId: session.userId,
         senderName: session.userName,
-        timestamp: Date.now(),
+        timestamp: now,
         charCount,
         encrypted,
         decryptedText: text,
@@ -545,7 +586,7 @@ export const App: React.FC = () => {
         isRead: false,
       };
 
-      setMessages((prev) => [...prev, msg]);
+      setMessages((prev) => sortMessages([...prev, msg]));
       networkRef.current.sendMessage(msg);
     } catch (err) {
       console.error('Failed to send message:', err);
@@ -575,12 +616,13 @@ export const App: React.FC = () => {
       });
 
       const encrypted = await encryptMessage(imagePayloadJson, cryptoKey);
+      const now = networkRef.current?.getServerTime() || Date.now();
       const msg: ChatMessage = {
-        id: `img_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
+        id: `img_${now}_${Math.random().toString(36).substring(2, 8)}`,
         roomId: session.roomId,
         senderId: session.userId,
         senderName: session.userName,
-        timestamp: Date.now(),
+        timestamp: now,
         msgType: 'image',
         imageMeta: {
           width: compressed.width,
@@ -599,7 +641,7 @@ export const App: React.FC = () => {
         isRead: false,
       };
 
-      setMessages((prev) => [...prev, msg]);
+      setMessages((prev) => sortMessages([...prev, msg]));
       networkRef.current.sendMessage(msg);
     } catch (err) {
       console.error('Failed to send image:', err);

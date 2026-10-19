@@ -1,6 +1,6 @@
 {
   "name": "encchat",
-  "version": "1.7.1",
+  "version": "1.7.2",
   "description": "High-privacy End-to-End Encrypted Chat Web App",
   "type": "module",
   "scripts": {
